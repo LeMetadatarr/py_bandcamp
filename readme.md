@@ -2,6 +2,8 @@
 
 Python scraper for Bandcamp — search, metadata, stream URL extraction, and discovery.
 
+Returns [`mediavocab`](https://github.com/OpenVoiceOS/mediavocab) `Release` and `Entity` objects for typed, structured metadata.
+
 ## Install
 
 ```bash
@@ -17,21 +19,67 @@ from py_bandcamp import BandCamp, BandcampTrack, BandcampAlbum, BandcampArtist
 url = BandCamp.get_stream_url("https://deadunicorn.bandcamp.com/track/astronaut-problems")
 print(url)  # https://t4.bcbits.com/stream/...
 
-# Search
-for track in BandCamp.search_tracks("astronaut problems"):
-    print(track, track.url)
+# Search — returns mediavocab Release objects
+for release in BandCamp.search_tracks("astronaut problems"):
+    artist = release.work.credits[0].entity.name if release.work.credits else ""
+    print(release.work.title, artist, release.uri)
 
-for album in BandCamp.search_albums("black metal"):
-    print(album.title, album.data.get("artist"))
+for release in BandCamp.search_albums("black metal"):
+    artist = release.work.credits[0].entity.name if release.work.credits else ""
+    print(release.work.title, artist)
 
-for artist in BandCamp.search_artists("Perturbator"):
-    print(artist.name, artist.genre, artist.location)
+# Search artists/labels — returns mediavocab Entity objects
+for entity in BandCamp.search_artists("Perturbator"):
+    print(entity.name, entity.extra.get("genre"), entity.extra.get("location"))
 
 # Browse by genre tag
-for result in BandCamp.search_tag("doom-metal", albums=True, tracks=False, max_pages=2):
-    print(result.title, result.url)
+for release in BandCamp.search_tag("doom-metal", albums=True, tracks=False, max_pages=2):
+    print(release.work.title, release.uri)
 
-# Load a track directly
+# Discover related albums and artists from a seed
+for release in BandCamp.get_recommendations("https://naxatras.bandcamp.com/album/iii"):
+    artist = release.work.credits[0].entity.name if release.work.credits else ""
+    print(release.work.title, artist, release.uri)
+
+for entity in BandCamp.get_related_artists("https://naxatras.bandcamp.com/album/iii"):
+    print(entity.name, entity.extra.get("artist_url"))
+```
+
+### Return types at a glance
+
+**`Release`** — from `search_tracks`, `search_albums`, `search_tag`, `get_recommendations`:
+
+```python
+release.uri                          # Bandcamp permalink
+release.image                        # artwork URL ("" when unavailable)
+release.work.title                   # track or album title
+release.work.media_type              # MediaType.MUSIC
+release.work.runtime                 # duration in seconds (float or None)
+release.work.credits[0].entity.name  # artist display name (if available)
+release.work.external_ids            # {"bandcamp_track_id": "...", "bandcamp_band_id": "..."}
+release.external_ids                 # same keys at the release level
+```
+
+**`Entity`** — from `search_artists`, `search_labels`, `get_related_artists`:
+
+```python
+entity.name                          # display name
+entity.kind                          # EntityKind.PERSON or EntityKind.ORGANISATION
+entity.extra.get("artist_url")       # profile URL
+entity.extra.get("image")            # avatar URL
+entity.extra.get("genre")            # genre string (artists only)
+entity.extra.get("location")         # location string
+entity.external_ids                  # {"bandcamp_band_id": "..."} (when known)
+```
+
+## Power-user: direct model access
+
+The internal scraper models remain available for loading full album/artist pages:
+
+```python
+from py_bandcamp import BandcampTrack, BandcampAlbum, BandcampArtist
+
+# Load a track directly (fetches and parses the track page)
 track = BandcampTrack.from_url("https://deadunicorn.bandcamp.com/track/astronaut-problems")
 print(track.title, track.stream, track.duration)
 
@@ -39,15 +87,6 @@ print(track.title, track.stream, track.duration)
 album = BandcampAlbum.from_url("https://naxatras.bandcamp.com/album/iii")
 for t in album.tracks:
     print(t.track_num, t.title, t.duration)
-
-# Discover related albums and artists from a seed
-recs = BandCamp.get_recommendations("https://naxatras.bandcamp.com/album/iii")
-for r in recs:
-    print(r.title, r.data.get("artist"), r.url)
-
-related = BandCamp.get_related_artists("https://naxatras.bandcamp.com/album/iii")
-for a in related:
-    print(a.name, a.url)
 
 # Load an artist
 artist = BandcampArtist.from_url("https://dopethrone.bandcamp.com")

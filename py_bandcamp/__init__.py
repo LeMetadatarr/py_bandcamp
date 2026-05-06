@@ -1,9 +1,79 @@
 from bs4 import BeautifulSoup
 
+from mediavocab import (
+    Entity, EntityRef, EntityKind,
+    Credit, CreditSection, RelationRole,
+    Release, Work, MediaType, StreamMode,
+)
+
 from py_bandcamp.models import BandcampTrack, BandcampAlbum, BandcampArtist, BandcampLabel
 from py_bandcamp.session import SESSION as requests, set_session
 from py_bandcamp.utils import extract_ldjson_blob, get_props, extract_blob, \
     get_stream_data
+
+
+def _track_to_release(track: BandcampTrack) -> Release:
+    external_ids: dict = {}
+    if track.track_id is not None:
+        external_ids["bandcamp_track_id"] = str(track.track_id)
+    if track.band_id is not None:
+        external_ids["bandcamp_band_id"] = str(track.band_id)
+    if track.album_id is not None:
+        external_ids["bandcamp_album_id"] = str(track.album_id)
+    credits: list = []
+    artist_name = track.data.get("artist") or ""
+    if artist_name:
+        artist_ref = EntityRef(name=artist_name, kind=EntityKind.PERSON)
+        credits.append(Credit(entity=artist_ref, role="artist",
+            relation_role=RelationRole.PERFORMER, section=CreditSection.PRINCIPAL))
+    work = Work(title=track.title, media_type=MediaType.MUSIC,
+                runtime=float(track.duration) if track.duration else None,
+                credits=credits, external_ids=external_ids)
+    return Release(work=work, uri=track.url or "", image=track.image or "",
+                   stream_mode=StreamMode.ON_DEMAND, external_ids=external_ids)
+
+
+def _album_to_release(album: BandcampAlbum) -> Release:
+    external_ids: dict = {}
+    if album.album_id is not None:
+        external_ids["bandcamp_album_id"] = str(album.album_id)
+    if album.band_id is not None:
+        external_ids["bandcamp_band_id"] = str(album.band_id)
+    credits: list = []
+    artist_name = album.data.get("artist") or ""
+    if artist_name:
+        artist_ref = EntityRef(name=artist_name, kind=EntityKind.PERSON)
+        credits.append(Credit(entity=artist_ref, role="artist",
+            relation_role=RelationRole.CREATOR, section=CreditSection.PRINCIPAL))
+    work = Work(title=album.title, media_type=MediaType.MUSIC,
+                credits=credits, external_ids=external_ids)
+    return Release(work=work, uri=album.url or "", image=album.image or "",
+                   stream_mode=StreamMode.ON_DEMAND, external_ids=external_ids)
+
+
+def _artist_to_entity(artist: BandcampArtist) -> Entity:
+    external_ids: dict = {}
+    if artist.band_id is not None:
+        external_ids["bandcamp_band_id"] = str(artist.band_id)
+    extra: dict = {"artist_url": artist.url or ""}
+    if artist.image:
+        extra["image"] = artist.image
+    if artist.location:
+        extra["location"] = artist.location
+    if artist.genre:
+        extra["genre"] = artist.genre
+    return Entity(name=artist.name or "", kind=EntityKind.PERSON,
+                  external_ids=external_ids, extra=extra)
+
+
+def _label_to_entity(label: BandcampLabel) -> Entity:
+    extra: dict = {"artist_url": label.url or ""}
+    if label.image:
+        extra["image"] = label.image
+    if label.location:
+        extra["location"] = label.location
+    return Entity(name=label.name or "", kind=EntityKind.ORGANISATION,
+                  external_ids={}, extra=extra)
 
 
 class BandCamp:
@@ -88,7 +158,14 @@ class BandCamp:
                 continue
             _seen.add(str(data))
             page_results.append(data)
-            yield data
+            if isinstance(data, BandcampTrack):
+                yield _track_to_release(data)
+            elif isinstance(data, BandcampAlbum):
+                yield _album_to_release(data)
+            elif isinstance(data, BandcampArtist):
+                yield _artist_to_entity(data)
+            elif isinstance(data, BandcampLabel):
+                yield _label_to_entity(data)
 
         if not page_results or _page >= max_pages:
             return
@@ -100,13 +177,13 @@ class BandCamp:
     @staticmethod
     def get_recommendations(url):
         """Albums recommended for fans of a given album URL."""
-        return BandcampAlbum.get_recommendations(url)
+        return [_album_to_release(a) for a in BandcampAlbum.get_recommendations(url)]
 
     @staticmethod
     def get_related_artists(url):
         """Unique artists recommended for fans of a given album URL."""
         album = BandcampAlbum({"url": url}, scrap=False)
-        return album.related_artists
+        return [_artist_to_entity(a) for a in album.related_artists]
 
     @staticmethod
     def get_track_lyrics(track_url):

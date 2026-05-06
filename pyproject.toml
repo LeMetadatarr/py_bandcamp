@@ -9,7 +9,7 @@ description = "Bandcamp data scraper"
 license = { text = "Apache-2.0" }
 authors = [{ name = "jarbasAI", email = "jarbasai@mailfence.com" }]
 requires-python = ">=3.8"
-dependencies = ["beautifulsoup4", "requests"]
+dependencies = ["beautifulsoup4", "requests", "mediavocab>=0.1.0"]
 
 [project.optional-dependencies]
 test = ["pytest"]
