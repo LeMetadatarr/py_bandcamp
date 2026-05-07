@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.11.0 — unreleased
+
+### mediavocab integration
+
+- `mediavocab` is now a **hard runtime dependency**. `py_bandcamp` emits canonical mediavocab `Work` / `Release` / `Entity` models in addition to the legacy `BandcampAlbum` / `BandcampArtist` / `BandcampSingle` shapes.
+
+### Added
+
+- **Tracklists** — `Work.tracklist` is now populated by `album_to_release(include_tracklist=True)` so consumers get full per-track metadata (title, duration, position) on the typed model.
+- **Label discrimination** — Bandcamp pages can represent both labels and bands; the converter now distinguishes them and emits the right `EntityKind` (`GROUP` for bands, label entity for labels) instead of conflating the two.
+- **Genre mapping** — Bandcamp tags are mapped into `content_genres` with alias support (e.g. `hip hop` / `hip-hop` collapse to a canonical token).
+- **Audio technicals** — `codec`, `bitrate` and `audio_channels` are populated on the emitted `Release` from the Bandcamp tralbum payload.
+- **EntityKind.GROUP** — bands are now correctly classified as groups rather than as anonymous artists, so cast credits round-trip cleanly.
+
+### Changed
+
+- `album_to_release` / `artist_to_entity` track the latest mediavocab API surface.
+- Search results now yield mediavocab models alongside the legacy types — downstream consumers should prefer the typed surface.
+
+### Migration notes
+
+- `mediavocab` installs automatically as a dependency. Code that consumed only the legacy `BandcampAlbum` shape continues to work; new code should call `album_to_release` / `artist_to_entity` and consume `Work` / `Release` / `Entity`.
+
 ## [0.10.0a1](https://github.com/TigreGotico/py_bandcamp/tree/0.10.0a1) (2026-04-30)
 
 [Full Changelog](https://github.com/TigreGotico/py_bandcamp/compare/0.9.0a1...0.10.0a1)
