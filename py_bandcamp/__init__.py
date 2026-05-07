@@ -12,9 +12,13 @@ from mediavocab import (
 from mediavocab.taxonomy import genre as _genre_tax
 
 from py_bandcamp.models import BandcampTrack, BandcampAlbum, BandcampArtist, BandcampLabel
-from py_bandcamp.session import SESSION as requests, set_session
-from py_bandcamp.utils import extract_ldjson_blob, get_props, extract_blob, \
-    get_stream_data
+from py_bandcamp.session import SESSION as requests, set_session as set_session
+from py_bandcamp.utils import (
+    extract_ldjson_blob as extract_ldjson_blob,
+    get_props as get_props,
+    extract_blob,
+    get_stream_data,
+)
 
 
 _BC_DATE_FORMATS = ("%d %B %Y", "%B %d, %Y", "%d %b %Y", "%b %d, %Y")
