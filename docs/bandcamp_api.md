@@ -116,8 +116,12 @@ Returned by `search_tracks`, `search_albums`, `search_tag`, `get_recommendations
 | `release.work.runtime` | `float\|None` | Duration in seconds (tracks only; `None` for albums) |
 | `release.work.credits` | `list[Credit]` | Empty when artist unknown |
 | `release.work.credits[0].entity.name` | `str` | Artist display name |
-| `release.work.external_ids` | `dict` | `bandcamp_track_id`, `bandcamp_band_id`, `bandcamp_album_id` |
-| `release.external_ids` | `dict` | Same keys at the release level |
+| `release.work.credits[0].relation_role` | `RelationRole` | `RelationRole.PERFORMER` (tracks) or `RelationRole.CREATOR` (albums) |
+| `release.release_date` | `IsoDate\|None` | ISO-8601 string ("2024", "2024-09", "2024-09-05"); `None` when unknown |
+| `release.license` | `str` | SPDX-style identifier inferred from CC tags ("CC-BY-SA-4.0", …) or `""` |
+| `release.parsed_license` | `License` | Typed view of `release.license`; `parsed_license.is_open()` for filtering |
+| `release.work.external_ids` | `Dict[str, str]` | `bandcamp_track_id`, `bandcamp_band_id`, `bandcamp_album_id`, `bandcamp_track_url`, `bandcamp_album_url` |
+| `release.external_ids` | `Dict[str, str]` | Same keys at the release level |
 
 ### Entity (artists and labels)
 

@@ -1,3 +1,6 @@
+import re
+from datetime import datetime
+
 from bs4 import BeautifulSoup
 
 from mediavocab import (
@@ -12,6 +15,59 @@ from py_bandcamp.utils import extract_ldjson_blob, get_props, extract_blob, \
     get_stream_data
 
 
+_BC_DATE_FORMATS = ("%d %B %Y", "%B %d, %Y", "%d %b %Y", "%b %d, %Y")
+_ISO_DATE_RE = re.compile(r"^\d{4}(?:-\d{2}(?:-\d{2})?)?$")
+
+
+def _to_iso_date(raw):
+    """Normalise Bandcamp date forms to an IsoDate-validatable string.
+
+    Accepts already-ISO inputs ("2024", "2024-09", "2024-09-05") plus
+    Bandcamp's free text ("27 March 2020", "March 27, 2020"). Returns
+    ``None`` for empty / unparseable values — IsoDate treats absence
+    as "unknown" rather than invalid.
+    """
+    if not raw:
+        return None
+    s = str(raw).strip()
+    if not s:
+        return None
+    if _ISO_DATE_RE.match(s):
+        return s
+    # Bandcamp datePublished like "07 May 2020 00:00:00 GMT" — drop the
+    # trailing time + zone tokens so strptime sees just the date head.
+    s_clean = re.sub(r"\s+\d{2}:\d{2}(:\d{2})?(\s+\w+)?\s*$", "", s).strip()
+    for fmt in _BC_DATE_FORMATS:
+        try:
+            return datetime.strptime(s_clean, fmt).date().isoformat()
+        except ValueError:
+            continue
+    return None
+
+
+def _spdx_from_tags(tags):
+    """Best-effort SPDX guess from Bandcamp keyword tags. Returns ``""``
+    when no Creative Commons hint is present — Release.license stays
+    empty rather than guessing All-Rights-Reserved (the default in many
+    SPDX vocabularies but not what Bandcamp asserts)."""
+    if not tags:
+        return ""
+    norm = {str(t).lower().replace("_", "-").replace(" ", "-") for t in tags}
+    # Most specific first.
+    for spdx, needles in (
+        ("CC-BY-NC-ND-4.0", {"cc-by-nc-nd", "by-nc-nd"}),
+        ("CC-BY-NC-SA-4.0", {"cc-by-nc-sa", "by-nc-sa"}),
+        ("CC-BY-SA-4.0",    {"cc-by-sa", "by-sa"}),
+        ("CC-BY-NC-4.0",    {"cc-by-nc", "by-nc"}),
+        ("CC-BY-ND-4.0",    {"cc-by-nd", "by-nd"}),
+        ("CC-BY-4.0",       {"cc-by"}),
+        ("CC0-1.0",         {"cc0", "public-domain"}),
+    ):
+        if norm & needles:
+            return spdx
+    return ""
+
+
 def _track_to_release(track: BandcampTrack) -> Release:
     external_ids: dict = {}
     if track.track_id is not None:
@@ -20,6 +76,8 @@ def _track_to_release(track: BandcampTrack) -> Release:
         external_ids["bandcamp_band_id"] = str(track.band_id)
     if track.album_id is not None:
         external_ids["bandcamp_album_id"] = str(track.album_id)
+    if track.url:
+        external_ids["bandcamp_track_url"] = track.url
     credits: list = []
     artist_name = track.data.get("artist") or ""
     if artist_name:
@@ -29,8 +87,15 @@ def _track_to_release(track: BandcampTrack) -> Release:
     work = Work(title=track.title, media_type=MediaType.MUSIC,
                 runtime=float(track.duration) if track.duration else None,
                 credits=credits, external_ids=external_ids)
-    return Release(work=work, uri=track.url or "", image=track.image or "",
-                   stream_mode=StreamMode.ON_DEMAND, external_ids=external_ids)
+    release_date = _to_iso_date(
+        track.data.get("released") or track.data.get("datePublished")
+    )
+    return Release(
+        work=work, uri=track.url or "", image=track.image or "",
+        stream_mode=StreamMode.ON_DEMAND, external_ids=external_ids,
+        release_date=release_date,
+        license=_spdx_from_tags(track.data.get("tags") or track.data.get("keywords")),
+    )
 
 
 def _album_to_release(album: BandcampAlbum) -> Release:
@@ -39,6 +104,8 @@ def _album_to_release(album: BandcampAlbum) -> Release:
         external_ids["bandcamp_album_id"] = str(album.album_id)
     if album.band_id is not None:
         external_ids["bandcamp_band_id"] = str(album.band_id)
+    if album.url:
+        external_ids["bandcamp_album_url"] = album.url
     credits: list = []
     artist_name = album.data.get("artist") or ""
     if artist_name:
@@ -47,8 +114,15 @@ def _album_to_release(album: BandcampAlbum) -> Release:
             relation_role=RelationRole.CREATOR, section=CreditSection.PRINCIPAL))
     work = Work(title=album.title, media_type=MediaType.MUSIC,
                 credits=credits, external_ids=external_ids)
-    return Release(work=work, uri=album.url or "", image=album.image or "",
-                   stream_mode=StreamMode.ON_DEMAND, external_ids=external_ids)
+    release_date = _to_iso_date(
+        album.data.get("released") or album.data.get("datePublished")
+    )
+    return Release(
+        work=work, uri=album.url or "", image=album.image or "",
+        stream_mode=StreamMode.ON_DEMAND, external_ids=external_ids,
+        release_date=release_date,
+        license=_spdx_from_tags(album.data.get("tags") or album.data.get("keywords")),
+    )
 
 
 def _artist_to_entity(artist: BandcampArtist) -> Entity:

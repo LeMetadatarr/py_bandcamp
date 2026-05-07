@@ -52,4 +52,19 @@ assert "black-metal" in tags, "expected black-metal in tag list"
 assert "doom" in tags, "expected doom in tag list"
 print("  OK")
 
+print("\n=== free-text → first Release → typed fields ===")
+release = next(iter(BandCamp.search("naxatras iii", albums=True, tracks=False,
+                                     artists=False, labels=False)), None)
+if release is not None:
+    artist = release.work.credits[0].entity.name if release.work.credits else ""
+    print(f"  title         = {release.work.title}")
+    print(f"  media_type    = {release.work.media_type}")
+    print(f"  artist        = {artist}")
+    print(f"  release_date  = {release.release_date}")
+    print(f"  license       = {release.license!r}  (open? {release.parsed_license.is_open()})")
+    print(f"  album_url     = {release.external_ids.get('bandcamp_album_url')}")
+    print(f"  band_id       = {release.external_ids.get('bandcamp_band_id')}")
+else:
+    print("  (no results)")
+
 print("\nDone.")

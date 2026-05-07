@@ -4,6 +4,10 @@ Python scraper for Bandcamp — search, metadata, stream URL extraction, and dis
 
 Returns [`mediavocab`](https://github.com/OpenVoiceOS/mediavocab) `Release` and `Entity` objects for typed, structured metadata.
 
+`mediavocab>=0.1.0` is a hard runtime dependency — every search/recommendation
+helper hands back validated `Release` / `Entity` models. There is no dict
+fallback.
+
 ## Install
 
 ```bash
@@ -50,14 +54,33 @@ for entity in BandCamp.get_related_artists("https://naxatras.bandcamp.com/album/
 **`Release`** — from `search_tracks`, `search_albums`, `search_tag`, `get_recommendations`:
 
 ```python
-release.uri                          # Bandcamp permalink
-release.image                        # artwork URL ("" when unavailable)
-release.work.title                   # track or album title
-release.work.media_type              # MediaType.MUSIC
-release.work.runtime                 # duration in seconds (float or None)
-release.work.credits[0].entity.name  # artist display name (if available)
-release.work.external_ids            # {"bandcamp_track_id": "...", "bandcamp_band_id": "..."}
-release.external_ids                 # same keys at the release level
+release.uri                                       # Bandcamp permalink
+release.image                                     # artwork URL ("" when unavailable)
+release.work.title                                # track or album title
+release.work.media_type                           # MediaType.MUSIC
+release.work.runtime                              # duration in seconds (float or None)
+release.work.credits[0].entity.name               # artist display name (if available)
+release.work.credits[0].relation_role             # RelationRole.PERFORMER (tracks) / CREATOR (albums)
+release.release_date                              # IsoDate-validated string ("2024", "2024-09", "2024-09-05") or None
+release.license                                   # SPDX-style identifier ("CC-BY-SA-4.0") or "" when unknown
+release.parsed_license.is_open()                  # True for CC*/CC0/PD, False otherwise
+release.external_ids["bandcamp_album_url"]        # full Bandcamp URL for albums
+release.external_ids["bandcamp_track_url"]        # full Bandcamp URL for tracks
+release.external_ids["bandcamp_band_id"]          # numeric artist id
+release.external_ids["bandcamp_album_id"]         # numeric album id
+release.external_ids["bandcamp_track_id"]         # numeric track id
+```
+
+Minimal end-to-end:
+
+```python
+from py_bandcamp import BandCamp
+
+release = next(BandCamp.search("naxatras iii", albums=True, tracks=False, artists=False))
+print(release.work.title)
+print(release.release_date)
+print(release.parsed_license.is_open())
+print(release.external_ids["bandcamp_album_url"])
 ```
 
 **`Entity`** — from `search_artists`, `search_labels`, `get_related_artists`:
