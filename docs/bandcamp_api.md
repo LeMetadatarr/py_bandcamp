@@ -1,6 +1,11 @@
 # py_bandcamp — Developer Reference
 
-py_bandcamp scrapes Bandcamp pages to provide search, streaming, and metadata access without an official API.
+py_bandcamp scrapes Bandcamp pages to provide search, streaming, metadata access, and discovery without an official API.
+
+All public `BandCamp` class methods return [`mediavocab`](https://github.com/OpenVoiceOS/mediavocab) objects:
+
+- **track/album methods** (`search_tracks`, `search_albums`, `search_tag`, `get_recommendations`) yield/return `mediavocab.Release`
+- **artist/label methods** (`search_artists`, `search_labels`, `get_related_artists`) yield/return `mediavocab.Entity`
 
 ---
 
@@ -13,39 +18,43 @@ from py_bandcamp import BandCamp
 ### Search
 
 ```python
-# Search across all types (returns generator, auto-paginates up to max_pages)
+from mediavocab import Release, Entity
+
+# Search across all types (auto-paginates up to max_pages)
 for result in BandCamp.search("black metal", albums=True, tracks=True,
                                artists=True, labels=False, max_pages=10):
-    print(type(result).__name__, result)
+    if isinstance(result, Release):
+        print(result.work.title, result.uri)
+    elif isinstance(result, Entity):
+        print(result.name, result.extra.get("artist_url"))
 
 # Single-type convenience wrappers
-for t in BandCamp.search_tracks("astronaut problems"):
-    print(t.title, t.url)
+for release in BandCamp.search_tracks("astronaut problems"):
+    artist = release.work.credits[0].entity.name if release.work.credits else ""
+    print(release.work.title, artist, release.uri)
 
-for a in BandCamp.search_albums("iii"):
-    print(a.title, a.data.get("artist"))
+for release in BandCamp.search_albums("iii"):
+    artist = release.work.credits[0].entity.name if release.work.credits else ""
+    print(release.work.title, artist)
 
-for ar in BandCamp.search_artists("Perturbator"):
-    print(ar.name, ar.genre)
+for entity in BandCamp.search_artists("Perturbator"):
+    print(entity.name, entity.extra.get("genre"), entity.extra.get("location"))
 
-for lb in BandCamp.search_labels("Nuclear Blast"):
-    print(lb.name, lb.location)
+for entity in BandCamp.search_labels("Nuclear Blast"):
+    print(entity.name, entity.extra.get("location"))
 ```
 
-`search()` paginates automatically and yields `BandcampTrack`, `BandcampAlbum`,
-`BandcampArtist`, or `BandcampLabel` instances. Results are deduplicated by URL
-across pages. `max_pages` (default 10) caps how many Bandcamp pages are fetched.
+`search()` paginates automatically and yields `Release` or `Entity` instances depending on the result type. Results are deduplicated by URL across pages. `max_pages` (default 10) caps how many Bandcamp pages are fetched.
 
-When only one result type is requested, the Bandcamp `item_type` filter is sent
-so the results are more precise.
+When only one result type is requested, the Bandcamp `item_type` filter is sent so the results are more precise.
 
 ### Tag search
 
 ```python
 # Search by genre tag (wraps search() with the tag as query)
-for result in BandCamp.search_tag("black-metal", albums=True, tracks=True,
-                                   artists=True, labels=False, max_pages=5):
-    print(result)
+for release in BandCamp.search_tag("black-metal", albums=True, tracks=True,
+                                    artists=True, labels=False, max_pages=5):
+    print(release.work.title, release.uri)
 
 # Get all known genre/subgenre tag names
 tags = BandCamp.tags()                  # flat list of strings
@@ -69,21 +78,14 @@ urls = BandCamp.get_streams(["https://a.bandcamp.com/track/x",
 ### Recommendations & related artists
 
 ```python
-# Albums Bandcamp recommends for fans of a given album
-recs = BandCamp.get_recommendations("https://artist.bandcamp.com/album/title")
-# Returns list of BandcampAlbum (title, artist, url, image — no full scrape)
+# Albums Bandcamp recommends for fans of a given album → list[Release]
+for release in BandCamp.get_recommendations("https://artist.bandcamp.com/album/title"):
+    artist = release.work.credits[0].entity.name if release.work.credits else ""
+    print(release.work.title, artist, release.uri)
 
-# Unique artists extracted from those recommendations
-artists = BandCamp.get_related_artists("https://artist.bandcamp.com/album/title")
-# Returns list of BandcampArtist (name, url — no full scrape)
-```
-
-These are also available as properties on `BandcampAlbum`:
-
-```python
-album = BandcampAlbum.from_url("https://artist.bandcamp.com/album/title")
-album.recommendations   # list[BandcampAlbum]
-album.related_artists   # list[BandcampArtist]
+# Unique artists extracted from those recommendations → list[Entity]
+for entity in BandCamp.get_related_artists("https://artist.bandcamp.com/album/title"):
+    print(entity.name, entity.extra.get("artist_url"))
 ```
 
 Bandcamp populates the "If you like…" section with ~6–8 albums from fans who also
@@ -98,7 +100,63 @@ lyrics = BandCamp.get_track_lyrics("https://artist.bandcamp.com/track/song")
 
 ---
 
-## BandcampTrack
+## Return types
+
+### Release (tracks and albums)
+
+Returned by `search_tracks`, `search_albums`, `search_tag`, `get_recommendations`.
+
+| Attribute | Type | Description |
+|---|---|---|
+| `release.uri` | `str` | Canonical Bandcamp permalink (query string stripped) |
+| `release.image` | `str` | Artwork URL (`""` when unavailable) |
+| `release.stream_mode` | `StreamMode` | Always `StreamMode.ON_DEMAND` |
+| `release.codec` / `release.bitrate` / `release.audio_channels` | `str` | `"mp3"` / `"128"` / `"stereo"` — Bandcamp's free streaming preview |
+| `release.label` | `EntityRef\|None` | Imprint when `publisher` differs from the artist; `None` for self-released |
+| `release.work.title` | `str` | Track or album title |
+| `release.work.media_type` | `MediaType` | Always `MediaType.MUSIC` |
+| `release.work.runtime` | `float\|None` | Duration in seconds (tracks only; `None` for albums) |
+| `release.work.content_genres` | `list[str]` | Bandcamp tags mapped to `GENRE_*` tokens; unknown tags pass through verbatim |
+| `release.work.credits[0].entity.name` | `str` | Artist display name |
+| `release.work.credits[0].relation_role` | `RelationRole` | `RelationRole.PERFORMER` (tracks) or `RelationRole.CREATOR` (albums) |
+| `release.work.tracklist` | `list[Appearance]` | Ordered tracks — populated by `BandCamp.album_to_release(url, include_tracklist=True)`; empty after a plain search |
+| `release.release_date` | `IsoDate\|None` | ISO-8601 string ("2024", "2024-09", "2024-09-05"); `None` when unknown |
+| `release.license` | `str` | SPDX-style identifier inferred from CC tags or `""` |
+| `release.parsed_license` | `License` | Typed view of `release.license`; `parsed_license.is_open()` for filtering |
+| `release.external_ids` | `Dict[str, str]` | `bandcamp_track_id`, `bandcamp_album_id`, `bandcamp_band_id`, `bandcamp_track_url`, `bandcamp_album_url`, `bandcamp_band_url` |
+
+### Full-fidelity album conversion
+
+```python
+release = BandCamp.album_to_release(album_url, include_tracklist=True)
+for appearance in release.work.tracklist:
+    print(appearance.position, appearance.work.title, appearance.work.runtime)
+```
+
+`BandCamp.track_to_release(url)` is the equivalent for a single track URL.
+
+### Entity (artists and labels)
+
+Returned by `search_artists`, `search_labels`, `get_related_artists`.
+
+| Attribute | Type | Description |
+|---|---|---|
+| `entity.name` | `str` | Display name |
+| `entity.kind` | `EntityKind` | `EntityKind.GROUP` (artists) or `EntityKind.ORGANISATION` (labels) |
+| `entity.extra.get("artist_url")` | `str` | Profile URL |
+| `entity.extra.get("image")` | `str` | Avatar/logo URL |
+| `entity.extra.get("genre")` | `str` | Genre string (artists only) |
+| `entity.extra.get("location")` | `str` | Location string ("City, Country") |
+| `entity.extra.get("country")` | `str` | Country parsed from `location` (best-effort) |
+| `entity.external_ids` | `dict` | `bandcamp_band_id`, `bandcamp_band_url` |
+
+---
+
+## Internal models (power-user access)
+
+The internal scraper classes remain available for loading full album, artist, or track pages directly. They are not part of the primary API — use the `BandCamp` class for search and discovery.
+
+### BandcampTrack
 
 ```python
 from py_bandcamp import BandcampTrack
@@ -121,6 +179,9 @@ track.parse_page()
 | `stream` | `str\|None` | Direct MP3-128 CDN URL |
 | `duration` | `int` | Duration in seconds (0 if unavailable) |
 | `track_num` | `int\|None` | Track number in album |
+| `track_id` | `int\|None` | Bandcamp internal track id |
+| `band_id` | `int\|None` | Bandcamp internal band/artist id |
+| `album_id` | `int\|None` | Bandcamp internal album id |
 | `data` | `dict` | All parsed metadata |
 | `album` | `BandcampAlbum\|None` | Album this track belongs to (fetches page) |
 | `artist` | `BandcampArtist\|None` | Artist (fetches page) |
@@ -130,7 +191,7 @@ Search results have `parse=False` by default — call `track.parse_page()` to lo
 
 ---
 
-## BandcampAlbum
+### BandcampAlbum
 
 ```python
 from py_bandcamp import BandcampAlbum
@@ -147,6 +208,8 @@ album = BandcampAlbum({"url": "...", "title": "..."}, scrap=False)
 | `title` | `str` | Album title |
 | `image` | `str\|None` | Album art URL |
 | `keywords` | `list[str]` | Genre/tag keywords |
+| `album_id` | `int\|None` | Bandcamp internal album id |
+| `band_id` | `int\|None` | Bandcamp internal band/artist id |
 | `tracks` | `list[BandcampTrack]` | Track listing (with `track_num` and `duration_iso`) |
 | `featured_track` | `BandcampTrack\|None` | Featured track |
 | `artist` | `BandcampArtist\|None` | Artist (fetches page) |
@@ -159,12 +222,9 @@ Tracks in `album.tracks` have `duration` populated from the ISO 8601 duration
 on the album page. They do **not** have stream URLs — call `track.parse_page()`
 on individual tracks to load those.
 
-`recommendations` scrapes the "If you like…" section at the bottom of the album page.
-Availability depends on the album having enough purchase/fan data on Bandcamp.
-
 ---
 
-## BandcampArtist
+### BandcampArtist
 
 ```python
 from py_bandcamp import BandcampArtist
@@ -180,13 +240,14 @@ artist = BandcampArtist.from_url("https://artist.bandcamp.com")
 | `location` | `str\|None` | Location string |
 | `tags` | `list[str]` | Tag strings |
 | `image` | `str\|None` | Artist image URL |
+| `band_id` | `int\|None` | Bandcamp internal band/artist id |
 | `albums` | `list[BandcampAlbum]` | Albums (scrapes artist page) |
 | `featured_album` | `BandcampAlbum` | First album from `/releases` |
 | `featured_track` | `BandcampTrack\|None` | Featured track of the featured album |
 
 ---
 
-## BandcampLabel
+### BandcampLabel
 
 ```python
 from py_bandcamp import BandcampLabel

@@ -1,7 +1,7 @@
 import json
 import re
 
-from py_bandcamp.session import SESSION as requests
+from py_bandcamp.session import HTTP as requests
 
 
 def _parse_iso_duration(iso):
