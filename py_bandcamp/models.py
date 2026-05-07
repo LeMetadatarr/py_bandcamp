@@ -487,6 +487,8 @@ class BandcampAlbum:
         kwords = data.get('keywords', "")
         if isinstance(kwords, str):
             kwords = kwords.split(", ")
+        artist_data = data.get('byArtist') or {}
+        publisher_data = data.get('publisher') or {}
         result = {
             'dateModified': data.get('dateModified'),
             'datePublished': data.get('datePublished'),
@@ -497,7 +499,11 @@ class BandcampAlbum:
             "n_tracks": data.get('numTracks'),
             'image': data.get('image'),
             'featured_track_num': props.get('featured_track_num'),
-            'keywords': kwords
+            'keywords': kwords,
+            'artist': artist_data.get('name'),
+            'artist_url': (artist_data.get('id') or '').split('#')[0] or None,
+            'publisher': publisher_data.get('name'),
+            'publisher_url': (publisher_data.get('id') or '').split('#')[0] or None,
         }
         tralbum = _extract_tralbum(text)
         current = tralbum.get("current") or {}

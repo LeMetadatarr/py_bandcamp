@@ -108,20 +108,32 @@ Returned by `search_tracks`, `search_albums`, `search_tag`, `get_recommendations
 
 | Attribute | Type | Description |
 |---|---|---|
-| `release.uri` | `str` | Bandcamp permalink |
+| `release.uri` | `str` | Canonical Bandcamp permalink (query string stripped) |
 | `release.image` | `str` | Artwork URL (`""` when unavailable) |
 | `release.stream_mode` | `StreamMode` | Always `StreamMode.ON_DEMAND` |
+| `release.codec` / `release.bitrate` / `release.audio_channels` | `str` | `"mp3"` / `"128"` / `"stereo"` — Bandcamp's free streaming preview |
+| `release.label` | `EntityRef\|None` | Imprint when `publisher` differs from the artist; `None` for self-released |
 | `release.work.title` | `str` | Track or album title |
 | `release.work.media_type` | `MediaType` | Always `MediaType.MUSIC` |
 | `release.work.runtime` | `float\|None` | Duration in seconds (tracks only; `None` for albums) |
-| `release.work.credits` | `list[Credit]` | Empty when artist unknown |
+| `release.work.content_genres` | `list[str]` | Bandcamp tags mapped to `GENRE_*` tokens; unknown tags pass through verbatim |
 | `release.work.credits[0].entity.name` | `str` | Artist display name |
 | `release.work.credits[0].relation_role` | `RelationRole` | `RelationRole.PERFORMER` (tracks) or `RelationRole.CREATOR` (albums) |
+| `release.work.tracklist` | `list[Appearance]` | Ordered tracks — populated by `BandCamp.album_to_release(url, include_tracklist=True)`; empty after a plain search |
 | `release.release_date` | `IsoDate\|None` | ISO-8601 string ("2024", "2024-09", "2024-09-05"); `None` when unknown |
-| `release.license` | `str` | SPDX-style identifier inferred from CC tags ("CC-BY-SA-4.0", …) or `""` |
+| `release.license` | `str` | SPDX-style identifier inferred from CC tags or `""` |
 | `release.parsed_license` | `License` | Typed view of `release.license`; `parsed_license.is_open()` for filtering |
-| `release.work.external_ids` | `Dict[str, str]` | `bandcamp_track_id`, `bandcamp_band_id`, `bandcamp_album_id`, `bandcamp_track_url`, `bandcamp_album_url` |
-| `release.external_ids` | `Dict[str, str]` | Same keys at the release level |
+| `release.external_ids` | `Dict[str, str]` | `bandcamp_track_id`, `bandcamp_album_id`, `bandcamp_band_id`, `bandcamp_track_url`, `bandcamp_album_url`, `bandcamp_band_url` |
+
+### Full-fidelity album conversion
+
+```python
+release = BandCamp.album_to_release(album_url, include_tracklist=True)
+for appearance in release.work.tracklist:
+    print(appearance.position, appearance.work.title, appearance.work.runtime)
+```
+
+`BandCamp.track_to_release(url)` is the equivalent for a single track URL.
 
 ### Entity (artists and labels)
 
@@ -130,12 +142,13 @@ Returned by `search_artists`, `search_labels`, `get_related_artists`.
 | Attribute | Type | Description |
 |---|---|---|
 | `entity.name` | `str` | Display name |
-| `entity.kind` | `EntityKind` | `EntityKind.PERSON` (artists) or `EntityKind.ORGANISATION` (labels) |
+| `entity.kind` | `EntityKind` | `EntityKind.GROUP` (artists) or `EntityKind.ORGANISATION` (labels) |
 | `entity.extra.get("artist_url")` | `str` | Profile URL |
 | `entity.extra.get("image")` | `str` | Avatar/logo URL |
 | `entity.extra.get("genre")` | `str` | Genre string (artists only) |
-| `entity.extra.get("location")` | `str` | Location string |
-| `entity.external_ids` | `dict` | `bandcamp_band_id` (when known) |
+| `entity.extra.get("location")` | `str` | Location string ("City, Country") |
+| `entity.extra.get("country")` | `str` | Country parsed from `location` (best-effort) |
+| `entity.external_ids` | `dict` | `bandcamp_band_id`, `bandcamp_band_url` |
 
 ---
 

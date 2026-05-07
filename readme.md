@@ -54,22 +54,48 @@ for entity in BandCamp.get_related_artists("https://naxatras.bandcamp.com/album/
 **`Release`** — from `search_tracks`, `search_albums`, `search_tag`, `get_recommendations`:
 
 ```python
-release.uri                                       # Bandcamp permalink
+release.uri                                       # canonical Bandcamp permalink (no query string)
 release.image                                     # artwork URL ("" when unavailable)
 release.work.title                                # track or album title
 release.work.media_type                           # MediaType.MUSIC
-release.work.runtime                              # duration in seconds (float or None)
+release.work.runtime                              # duration in seconds (tracks only)
+release.work.content_genres                       # list of GENRE_* tokens + raw Bandcamp tags
 release.work.credits[0].entity.name               # artist display name (if available)
 release.work.credits[0].relation_role             # RelationRole.PERFORMER (tracks) / CREATOR (albums)
-release.release_date                              # IsoDate-validated string ("2024", "2024-09", "2024-09-05") or None
-release.license                                   # SPDX-style identifier ("CC-BY-SA-4.0") or "" when unknown
+release.work.tracklist                            # list[Appearance] — populated by album_to_release(...)
+release.release_date                              # IsoDate-validated string or None
+release.license                                   # SPDX-style identifier ("CC-BY-SA-4.0") or ""
 release.parsed_license.is_open()                  # True for CC*/CC0/PD, False otherwise
+release.codec                                     # "mp3" — Bandcamp's free streaming preview
+release.bitrate                                   # "128" (kbps)
+release.audio_channels                            # "stereo"
+release.label                                     # EntityRef for the imprint, or None when self-released
 release.external_ids["bandcamp_album_url"]        # full Bandcamp URL for albums
 release.external_ids["bandcamp_track_url"]        # full Bandcamp URL for tracks
+release.external_ids["bandcamp_band_url"]         # canonical artist root URL
 release.external_ids["bandcamp_band_id"]          # numeric artist id
 release.external_ids["bandcamp_album_id"]         # numeric album id
 release.external_ids["bandcamp_track_id"]         # numeric track id
 ```
+
+### Full-fidelity album conversion
+
+`BandCamp.search_*` keeps payloads small by skipping the per-album track
+fetch. When you want the ordered tracklist, use `album_to_release`:
+
+```python
+from py_bandcamp import BandCamp
+
+release = BandCamp.album_to_release(
+    "https://naxatras.bandcamp.com/album/iii",
+    include_tracklist=True,
+)
+print(release.work.title, release.release_date)
+for appearance in release.work.tracklist:
+    print(appearance.position, appearance.work.title, appearance.work.runtime)
+```
+
+`BandCamp.track_to_release(url)` is the equivalent for a single track URL.
 
 Minimal end-to-end:
 
@@ -145,6 +171,7 @@ See [docs/bandcamp_api.md](docs/bandcamp_api.md) for the full reference.
 | `examples/artist_browse.py` | Browse an artist: albums, featured album and track |
 | `examples/search.py` | Search for tracks, albums, artists, labels, tags |
 | `examples/recommendations.py` | Related albums and artists from a seed; genre browsing |
+| `examples/release_tracklist.py` | Convert an album URL to a `Release` with full tracklist |
 
 ## Notes
 
