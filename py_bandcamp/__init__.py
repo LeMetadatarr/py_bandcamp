@@ -12,7 +12,7 @@ from mediavocab import (
 from mediavocab.taxonomy import genre as _genre_tax
 
 from py_bandcamp.models import BandcampTrack, BandcampAlbum, BandcampArtist, BandcampLabel
-from py_bandcamp.session import SESSION as requests, set_session as set_session
+from py_bandcamp.session import HTTP as requests, set_session as set_session, get_session as get_session
 from py_bandcamp.utils import (
     extract_ldjson_blob as extract_ldjson_blob,
     get_props as get_props,
@@ -324,7 +324,64 @@ def _label_to_entity(label: BandcampLabel) -> Entity:
                   external_ids=external_ids, extra=extra)
 
 
+class _hybridmethod:
+    """Descriptor that exposes one function as both a classmethod and an
+    instance method.
+
+    The wrapped function receives ``(owner_cls, session, *args, **kwargs)``.
+    When accessed via the class, ``session`` is ``None``; when accessed
+    via an instance, ``session`` is ``instance._session`` (which may
+    itself be ``None`` if the user didn't inject one).
+
+    This lets ``BandCamp.search(...)`` keep working unchanged (using the
+    module-level :data:`requests` proxy that existing tests patch) while
+    ``BandCamp(session=s).search(...)`` routes through the injected
+    session.
+    """
+
+    def __init__(self, func):
+        self.func = func
+        self.__doc__ = func.__doc__
+
+    def __get__(self, obj, cls):
+        session = obj._session if obj is not None else None
+
+        def bound(*args, **kwargs):
+            return self.func(cls, session, *args, **kwargs)
+
+        bound.__name__ = self.func.__name__
+        bound.__doc__ = self.func.__doc__
+        return bound
+
+
+def _http(session):
+    """Return the HTTP-callable to use for this call site.
+
+    ``session`` is the per-instance override (or ``None``). When
+    ``None`` we return the module-level :data:`requests` proxy so test
+    patches against ``py_bandcamp.requests`` keep intercepting traffic.
+    """
+    return session if session is not None else requests
+
+
 class BandCamp:
+    """Bandcamp scraper facade.
+
+    Usage as a classmethod-style helper (default global session)::
+
+        BandCamp.search("foo")
+
+    Or with an injected session — useful for routing through curl_cffi
+    to bypass the search-page Fastly bot challenge::
+
+        from py_bandcamp.transport import default_session
+        bc = BandCamp(session=default_session())
+        bc.search("foo")
+    """
+
+    def __init__(self, session=None):
+        self._session = session
+
     @staticmethod
     def tags(tag_list=True):
         data = extract_blob("https://bandcamp.com/tags")
@@ -338,38 +395,39 @@ class BandCamp:
             tag_list += [sub["norm_name"] for sub in tags["subgenres"][genre]]
         return tag_list
 
-    @classmethod
-    def search_tag(cls, tag, albums=True, tracks=True, artists=True, labels=False, max_pages=10):
+    @_hybridmethod
+    def search_tag(cls, _session, tag, albums=True, tracks=True, artists=True, labels=False, max_pages=10):
         tag = tag.strip().replace(" ", "-").lower()
-        yield from cls.search(tag, albums=albums, tracks=tracks,
-                              artists=artists, labels=labels, max_pages=max_pages)
+        yield from cls.__dict__['search'].func(
+            cls, _session, tag, albums=albums, tracks=tracks,
+            artists=artists, labels=labels, max_pages=max_pages)
 
-    @classmethod
-    def search_albums(cls, album_name):
-        for album in cls.search(album_name, albums=True, tracks=False,
-                                artists=False, labels=False):
-            yield album
+    @_hybridmethod
+    def search_albums(cls, _session, album_name):
+        yield from cls.__dict__['search'].func(
+            cls, _session, album_name, albums=True, tracks=False,
+            artists=False, labels=False)
 
-    @classmethod
-    def search_tracks(cls, track_name):
-        for t in cls.search(track_name, albums=False, tracks=True,
-                            artists=False, labels=False):
-            yield t
+    @_hybridmethod
+    def search_tracks(cls, _session, track_name):
+        yield from cls.__dict__['search'].func(
+            cls, _session, track_name, albums=False, tracks=True,
+            artists=False, labels=False)
 
-    @classmethod
-    def search_artists(cls, artist_name):
-        for a in cls.search(artist_name, albums=False, tracks=False,
-                            artists=True, labels=False):
-            yield a
+    @_hybridmethod
+    def search_artists(cls, _session, artist_name):
+        yield from cls.__dict__['search'].func(
+            cls, _session, artist_name, albums=False, tracks=False,
+            artists=True, labels=False)
 
-    @classmethod
-    def search_labels(cls, label_name):
-        for a in cls.search(label_name, albums=False, tracks=False,
-                            artists=False, labels=True):
-            yield a
+    @_hybridmethod
+    def search_labels(cls, _session, label_name):
+        yield from cls.__dict__['search'].func(
+            cls, _session, label_name, albums=False, tracks=False,
+            artists=False, labels=True)
 
-    @classmethod
-    def search(cls, name, albums=True, tracks=True, artists=True,
+    @_hybridmethod
+    def search(cls, _session, name, albums=True, tracks=True, artists=True,
                labels=False, max_pages=10, _page=1, _seen=None):
         _seen = _seen or set()
 
@@ -386,7 +444,7 @@ class BandCamp:
         params = {"page": _page, "q": name}
         if item_type:
             params["item_type"] = item_type
-        response = requests.get('http://bandcamp.com/search', params=params)
+        response = _http(_session).get('http://bandcamp.com/search', params=params)
         soup = BeautifulSoup(response.content, 'html.parser')
 
         page_results = []
@@ -417,10 +475,13 @@ class BandCamp:
 
         if not page_results or _page >= max_pages:
             return
-        yield from cls.search(name, albums=albums, tracks=tracks,
-                              artists=artists, labels=labels,
-                              max_pages=max_pages, _page=_page + 1,
-                              _seen=_seen)
+        # Recurse through the underlying function so the injected session
+        # (if any) propagates across page fetches without round-tripping
+        # through the descriptor.
+        yield from cls.__dict__['search'].func(
+            cls, _session, name, albums=albums, tracks=tracks,
+            artists=artists, labels=labels, max_pages=max_pages,
+            _page=_page + 1, _seen=_seen)
 
     @staticmethod
     def album_to_release(album_or_url, include_tracklist: bool = True) -> Release:
@@ -452,9 +513,9 @@ class BandCamp:
         album = BandcampAlbum({"url": url}, scrap=False)
         return [_artist_to_entity(a) for a in album.related_artists]
 
-    @staticmethod
-    def get_track_lyrics(track_url):
-        track_page = requests.get(track_url)
+    @_hybridmethod
+    def get_track_lyrics(cls, _session, track_url):
+        track_page = _http(_session).get(track_url)
         track_soup = BeautifulSoup(track_page.text, 'html.parser')
         track_lyrics = track_soup.find("div", {"class": "lyricsText"})
         if track_lyrics:

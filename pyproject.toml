@@ -13,6 +13,7 @@ dependencies = ["beautifulsoup4", "requests", "mediavocab>=0.1.0"]
 
 [project.optional-dependencies]
 test = ["pytest", "vcrpy", "pytest-vcr"]
+stealth = ["curl-cffi"]
 
 [project.urls]
 Homepage = "https://github.com/OpenJarbas/py_bandcamp"

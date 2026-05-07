@@ -146,16 +146,49 @@ for album in artist.albums[:3]:
 
 ## Session injection
 
-By default py_bandcamp uses a plain `requests.Session`. You can replace it with any
-session-compatible object (e.g. one with custom headers, retries, or a cache):
+By default py_bandcamp uses a plain `requests.Session` with a realistic
+`User-Agent`. You can replace it with any session-compatible object
+(e.g. one with custom headers, retries, or a cache):
 
 ```python
 import requests
-from py_bandcamp import set_session
+from py_bandcamp import set_session, BandCamp
 
 session = requests.Session()
 session.headers["User-Agent"] = "my-app/1.0"
-set_session(session)
+set_session(session)               # global override
+
+# Or inject per-instance, leaving the global session untouched:
+bc = BandCamp(session=session)
+list(bc.search_tracks("astronaut problems"))
+```
+
+## Bypassing the Bandcamp search bot wall (curl_cffi)
+
+Bandcamp's search endpoint is currently fronted by a Fastly bot challenge
+that rejects vanilla `requests` traffic on TLS-fingerprint grounds. The
+fix is to route through [`curl_cffi`](https://github.com/lexiforest/curl_cffi),
+which impersonates real browser TLS/JA3 fingerprints:
+
+```bash
+pip install py-bandcamp[stealth]
+export PYBANDCAMP_TRANSPORT=curl_cffi
+```
+
+With both in place, `py_bandcamp` automatically builds its default
+session via `curl_cffi.requests.Session(impersonate="chrome")`, clearing
+the challenge transparently. If `curl_cffi` isn't installed the env var
+is ignored and we fall back to plain `requests` so nothing hard-breaks.
+
+You can also build the transport explicitly and inject it:
+
+```python
+from py_bandcamp import BandCamp
+from py_bandcamp.transport import default_session
+
+bc = BandCamp(session=default_session())
+for r in bc.search_tracks("astronaut problems"):
+    print(r.work.title)
 ```
 
 ## API

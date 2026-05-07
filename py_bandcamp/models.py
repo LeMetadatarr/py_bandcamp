@@ -1,5 +1,5 @@
 from bs4 import BeautifulSoup
-from py_bandcamp.session import SESSION as requests
+from py_bandcamp.session import HTTP as requests
 from py_bandcamp.utils import (
     _extract_blob_from_text,
     _extract_tralbum,
