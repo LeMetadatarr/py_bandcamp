@@ -4,7 +4,7 @@ from datetime import datetime
 from bs4 import BeautifulSoup
 
 from mediavocab import (
-    Entity, EntityRef, EntityKind,
+    Entity, EntityRef, EntityKind, OrganisationKind,
     Credit, CreditSection, RelationRole,
     Release, Work, MediaType, StreamMode,
     Appearance,
@@ -321,6 +321,7 @@ def _label_to_entity(label: BandcampLabel) -> Entity:
         if country:
             extra["country"] = country
     return Entity(name=label.name or "", kind=EntityKind.ORGANISATION,
+                  org_kind=OrganisationKind.LABEL,
                   external_ids=external_ids, extra=extra)
 
 
