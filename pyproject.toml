@@ -12,6 +12,7 @@ requires-python = ">=3.8"
 dependencies = ["beautifulsoup4", "requests", "mediavocab>=2.0.0a2"]
 
 [project.optional-dependencies]
+anon = ["anon_requests"]
 test = ["pytest", "vcrpy", "pytest-vcr"]
 stealth = ["curl-cffi", "unblock_requests"]
 
