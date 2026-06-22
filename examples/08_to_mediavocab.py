@@ -22,7 +22,7 @@ print(f"bitrate          : {r.bitrate}")
 print(f"audio_channels   : {r.audio_channels}")
 print(f"release_date     : {r.release_date}")
 print(f"license          : {r.license!r}")
-print(f"license open     : {r.parsed_license.is_open()}")
+print(f"license open     : {r.license.is_open() if r.license else False}")
 print(f"label            : {r.label.name if r.label else None}")
 
 w = r.work

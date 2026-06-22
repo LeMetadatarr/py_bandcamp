@@ -35,8 +35,8 @@ release.codec                            # "mp3"
 release.bitrate                          # "128"  (kbps)
 release.audio_channels                   # "stereo"
 release.release_date                     # "2018-08-17" (IsoDate string) or None
-release.license                          # "CC-BY-SA-4.0" or "" (from CC tags only)
-release.parsed_license.is_open()         # True for CC* / CC0 / PD
+release.license                          # License object (.identifier "CC-BY-SA-4.0") or None (from CC tags only)
+release.license.is_open() if release.license else False  # True for CC* / CC0 / PD
 
 release.work.title                       # "III"
 release.work.media_type                  # MediaType.MUSIC

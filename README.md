@@ -74,7 +74,7 @@ release.work.credits[0].relation_role             # RelationRole.PERFORMER (trac
 release.work.tracklist                            # list[Appearance] — populated by album_to_release(...)
 release.release_date                              # IsoDate-validated string or None
 release.license                                   # License object (.identifier "CC-BY-SA-4.0") or None
-release.parsed_license.is_open()                  # True for CC*/CC0/PD, False otherwise
+release.license.is_open() if release.license else False   # True for CC*/CC0/PD, False otherwise
 release.codec                                     # "mp3" — Bandcamp's free streaming preview
 release.bitrate                                   # "128" (kbps)
 release.audio_channels                            # "stereo"
