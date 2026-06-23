@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.11.0a2](https://github.com/TigreGotico/py_bandcamp/tree/0.11.0a2) (2026-06-23)
+
+[Full Changelog](https://github.com/TigreGotico/py_bandcamp/compare/0.11.0a1...0.11.0a2)
+
+**Merged pull requests:**
+
+- chore: migrate to mediavocab 1.0 [\#18](https://github.com/TigreGotico/py_bandcamp/pull/18) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.11.0a1](https://github.com/TigreGotico/py_bandcamp/tree/0.11.0a1) (2026-05-07)
 
 [Full Changelog](https://github.com/TigreGotico/py_bandcamp/compare/0.10.0a1...0.11.0a1)
