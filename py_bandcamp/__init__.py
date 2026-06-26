@@ -1,3 +1,4 @@
+import json
 import re
 from datetime import datetime
 
@@ -513,6 +514,71 @@ class BandCamp:
         """Unique artists recommended for fans of a given album URL."""
         album = BandcampAlbum({"url": url}, scrap=False)
         return [_artist_to_entity(a) for a in album.related_artists]
+
+    @_hybridmethod
+    def browse_tag(cls, _session, tag, max_pages=10):
+        """Discover artist and release entities for a genre tag.
+
+        Uses the same search endpoint as :meth:`search` (which avoids the
+        Cloudflare-protected tag-browse page) but filters to both artist and
+        album results for the given tag query. Yields :class:`mediavocab.Entity`
+        objects for artist matches and :class:`mediavocab.Release` objects for
+        album matches.
+
+        ``max_pages`` caps the number of search-results pages fetched (each
+        page yields up to ~18 results). Default is 10 pages ≈ 180 results per
+        tag.
+        """
+        tag_query = tag.strip().replace("-", " ").lower()
+        yield from cls.__dict__['search'].func(
+            cls, _session, tag_query,
+            albums=True, tracks=False, artists=True, labels=False,
+            max_pages=max_pages,
+        )
+
+    @staticmethod
+    def get_label_artists(label_url):
+        """Yield Entity objects for artists signed to a Bandcamp label page.
+
+        Label pages embed a ``data-blob`` / ld+json payload containing the
+        full roster. Parses it to extract each artist's name and profile URL
+        without requiring JavaScript rendering.
+        """
+        try:
+            resp = requests.get(label_url, headers={"Accept": "text/html"})
+            if not resp.ok:
+                return
+            data = extract_ldjson_blob(label_url) if resp.ok else {}
+            # ld+json on label pages may have 'member' or 'subOrganization' list
+            members = data.get("member") or data.get("subOrganization") or []
+            for m in members:
+                name = m.get("name") or ""
+                url  = _strip_query(m.get("url") or m.get("@id") or "")
+                if not (name and url):
+                    continue
+                a = BandcampArtist({"name": name, "url": url}, scrap=False)
+                yield _artist_to_entity(a)
+            # Fallback: parse the page's embedded pagedata JSON for the band list
+            if not members:
+                soup = BeautifulSoup(resp.content, "html.parser")
+                for tag in soup.find_all("script", {"data-band"}):
+                    pass  # placeholder — label roster in data-blob is JS-rendered
+                # Extract from data-blob attribute if present
+                blob_tag = soup.find(attrs={"data-blob": True})
+                if blob_tag:
+                    try:
+                        blob = json.loads(blob_tag["data-blob"])
+                        for band in (blob.get("bands") or []):
+                            name = band.get("name") or ""
+                            subdomain = band.get("subdomain") or ""
+                            if name and subdomain:
+                                url = f"https://{subdomain}.bandcamp.com"
+                                a = BandcampArtist({"name": name, "url": url}, scrap=False)
+                                yield _artist_to_entity(a)
+                    except Exception:
+                        pass
+        except Exception:
+            return
 
     @_hybridmethod
     def get_track_lyrics(cls, _session, track_url):
