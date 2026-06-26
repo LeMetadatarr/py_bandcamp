@@ -82,16 +82,23 @@ artist = BandcampArtist.from_url("https://dopethrone.bandcamp.com")
 | `genre` | `str\|None` | Genre string |
 | `location` | `str\|None` | Location string ("City, Country") |
 | `image` | `str\|None` | Artist image |
-| `band_id` | `int\|None` | Scraped from `/releases` page (`item_sellers` dict key) |
+| `band_id` | `int\|None` | From `data-band` JSON or `/releases` `item_sellers` fallback |
+| `is_label` | `bool` | `True` when the artist page is also a label roster page |
+| `social` | `dict[str, str]` | Platform → URL for external links found on the page (keys: `twitter`, `instagram`, `facebook`, `youtube`, `spotify`, `tiktok`, `linktree`); absent when no links detected |
 | `albums` | `list[BandcampAlbum]` | Scrapes artist root page |
 | `featured_album` | `BandcampAlbum` | First entry from `/releases` |
 | `featured_track` | `BandcampTrack\|None` | Featured track of the featured album |
+
+`social` and `is_label` are parsed from `data-band` JSON embedded in the artist
+page. When converted to `mediavocab.Entity`, each social link surfaces as
+`entity.extra["social_<platform>"]` (e.g. `entity.extra["social_twitter"]`).
 
 `BandcampArtist.get_albums` — `models.py:685` accepts `include_singles=True`
 to also return `BandcampSingle` objects for `/track/` hrefs.
 
 `BandcampArtist._scrap_band_id` — `models.py:599` makes an extra GET to
-`<artist_url>/releases` to extract the numeric band id from `item_sellers`.
+`<artist_url>/releases` to extract the numeric band id from `item_sellers` when
+it is not present in `data-band`.
 
 ---
 
@@ -118,18 +125,31 @@ single = BandcampSingle.from_url("https://artist.bandcamp.com/track/song")
 ## BandcampLabel — `models.py:532`
 
 Label objects are produced by `BandCamp.search_labels` parsing search result
-HTML. `BandcampLabel.scrap()` is a no-op (no label detail page is scraped).
+HTML, or by fetching a label page directly.
 
 ```python
 from py_bandcamp.models import BandcampLabel
 
 label = BandcampLabel.from_url("https://label.bandcamp.com")
+# from_url uses scrap=False — properties come from the URL only.
+# To fetch the label page, construct with scrap=True (the default):
+label = BandcampLabel({"url": "https://label.bandcamp.com"})
 ```
+
+`BandcampLabel.scrap()` fetches the label page and parses:
+
+- `name` — from `#band-name-location .title`, or `data-band` JSON `name` field as fallback
+- `location` — from `#band-name-location .location`
+- `image` — from `#bio-container img`
+- `band_id` — numeric id from `data-band` JSON
+
+The `data-band` JSON also sets `is_label: True` internally, which
+`BandCamp.crawl()` uses to trigger label-roster expansion.
 
 | Property | Type | Notes |
 |---|---|---|
 | `url` | `str` | Label root URL |
-| `name` | `str` | Label name |
+| `name` | `str` | Label name (from page or init data) |
 | `location` | `str\|None` | Location string |
-| `tags` | `list[str]` | Tag strings |
+| `tags` | `list[str]` | Tag strings (from search result; not populated by `scrap()`) |
 | `image` | `str\|None` | Label image URL |

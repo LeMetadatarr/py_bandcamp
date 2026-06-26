@@ -89,3 +89,62 @@ for a in album.related_artists:        # list[BandcampArtist]
 Bandcamp populates the recommendations widget only for albums with enough
 fan/purchase data; `get_recommendations` returns an empty list when the
 widget is absent.
+
+---
+
+## Continuous discovery with crawl()
+
+`BandCamp.crawl()` does a breadth-first walk of the artist graph without
+touching the Cloudflare-protected `bandcamp.com/search` endpoint.
+
+```python
+from py_bandcamp import BandCamp
+
+# Yield Entity objects starting from one seed, stop after 20 artists
+for entity in BandCamp.crawl(["https://enslaved.bandcamp.com"], max_artists=20):
+    print(entity.name, entity.extra.get("location"))
+
+# albums_per_artist controls how deeply each artist's catalog is checked
+# for "fans also bought" recommendations.  Lower = faster, narrower graph.
+for entity in BandCamp.crawl(
+    ["https://neurosis.bandcamp.com"],
+    albums_per_artist=5,
+    max_artists=50,
+):
+    print(entity.name, entity.extra.get("genre"))
+```
+
+### Resumable crawls with a shared `seen` set
+
+Pass a `seen` set to prevent revisiting URLs across multiple `crawl()` calls:
+
+```python
+seen = set()
+
+# First run — start from one seed
+for entity in BandCamp.crawl(
+    ["https://enslaved.bandcamp.com"],
+    max_artists=100,
+    seen=seen,
+):
+    print(entity.name)
+
+# Second run — add a new seed; URLs already in seen are skipped
+for entity in BandCamp.crawl(
+    ["https://neurosis.bandcamp.com"],
+    max_artists=100,
+    seen=seen,
+):
+    print(entity.name)
+```
+
+`seen` is mutated in-place, so it accumulates visited URLs across runs.
+
+### Label expansion
+
+When `BandcampArtist.data["is_label"]` is `True`, `crawl()` calls
+`BandCamp.get_label_artists(url)` to pull the label roster and enqueue
+each signed artist into the frontier — letting a single label seed expand
+into the full signed catalog.
+
+`BandCamp.crawl` — `py_bandcamp/__init__.py:586`
