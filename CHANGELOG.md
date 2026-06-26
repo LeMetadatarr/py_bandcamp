@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.12.0a1](https://github.com/TigreGotico/py_bandcamp/tree/0.12.0a1) (2026-06-26)
+
+[Full Changelog](https://github.com/TigreGotico/py_bandcamp/compare/0.11.0a2...0.12.0a1)
+
+**Merged pull requests:**
+
+- feat: BandcampLabel.scrap, social links on artist profiles, fix json import [\#22](https://github.com/TigreGotico/py_bandcamp/pull/22) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.11.0a2](https://github.com/TigreGotico/py_bandcamp/tree/0.11.0a2) (2026-06-23)
 
 [Full Changelog](https://github.com/TigreGotico/py_bandcamp/compare/0.11.0a1...0.11.0a2)
