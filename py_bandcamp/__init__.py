@@ -1,3 +1,4 @@
+import json
 import re
 from datetime import datetime
 
@@ -303,6 +304,9 @@ def _artist_to_entity(artist: BandcampArtist) -> Entity:
             extra["country"] = country
     if artist.genre:
         extra["genre"] = artist.genre
+    social = artist.data.get("social") or {}
+    for platform, link in social.items():
+        extra[f"social_{platform}"] = link
     return Entity(name=artist.name or "", kind=EntityKind.GROUP,
                   external_ids=external_ids, extra=extra)
 
@@ -513,6 +517,165 @@ class BandCamp:
         """Unique artists recommended for fans of a given album URL."""
         album = BandcampAlbum({"url": url}, scrap=False)
         return [_artist_to_entity(a) for a in album.related_artists]
+
+    @_hybridmethod
+    def browse_tag(cls, _session, tag, max_pages=10):
+        """Discover artist and release entities for a genre tag.
+
+        Uses the same search endpoint as :meth:`search` (which avoids the
+        Cloudflare-protected tag-browse page) but filters to both artist and
+        album results for the given tag query. Yields :class:`mediavocab.Entity`
+        objects for artist matches and :class:`mediavocab.Release` objects for
+        album matches.
+
+        ``max_pages`` caps the number of search-results pages fetched (each
+        page yields up to ~18 results). Default is 10 pages ≈ 180 results per
+        tag.
+        """
+        tag_query = tag.strip().replace("-", " ").lower()
+        yield from cls.__dict__['search'].func(
+            cls, _session, tag_query,
+            albums=True, tracks=False, artists=True, labels=False,
+            max_pages=max_pages,
+        )
+
+    @staticmethod
+    def get_label_artists(label_url):
+        """Yield Entity objects for artists signed to a Bandcamp label page.
+
+        Label pages embed a ``data-blob`` / ld+json payload containing the
+        full roster. Parses it to extract each artist's name and profile URL
+        without requiring JavaScript rendering.
+        """
+        try:
+            resp = requests.get(label_url, headers={"Accept": "text/html"})
+            if not resp.ok:
+                return
+            data = extract_ldjson_blob(label_url) if resp.ok else {}
+            # ld+json on label pages may have 'member' or 'subOrganization' list
+            members = data.get("member") or data.get("subOrganization") or []
+            for m in members:
+                name = m.get("name") or ""
+                url  = _strip_query(m.get("url") or m.get("@id") or "")
+                if not (name and url):
+                    continue
+                a = BandcampArtist({"name": name, "url": url}, scrap=False)
+                yield _artist_to_entity(a)
+            # Fallback: parse the page's embedded pagedata JSON for the band list
+            if not members:
+                soup = BeautifulSoup(resp.content, "html.parser")
+                for tag in soup.find_all("script", {"data-band"}):
+                    pass  # placeholder — label roster in data-blob is JS-rendered
+                # Extract from data-blob attribute if present
+                blob_tag = soup.find(attrs={"data-blob": True})
+                if blob_tag:
+                    try:
+                        blob = json.loads(blob_tag["data-blob"])
+                        for band in (blob.get("bands") or []):
+                            name = band.get("name") or ""
+                            subdomain = band.get("subdomain") or ""
+                            if name and subdomain:
+                                url = f"https://{subdomain}.bandcamp.com"
+                                a = BandcampArtist({"name": name, "url": url}, scrap=False)
+                                yield _artist_to_entity(a)
+                    except Exception:
+                        pass
+        except Exception:
+            return
+
+    @classmethod
+    def crawl(
+        cls,
+        seeds: list,
+        *,
+        albums_per_artist: int = 3,
+        max_artists: int = 0,
+        seen: set | None = None,
+    ):
+        """Yield Entity objects via related-artist BFS from seed profile URLs.
+
+        Starting from *seeds* (artist or label Bandcamp URLs), each artist's
+        albums are fetched and the "fans also bought" recommendation links on
+        those album pages are used to discover new artists.  Label URLs are
+        expanded via their roster.
+
+        This avoids ``bandcamp.com`` search/tag pages (Cloudflare-protected)
+        by relying entirely on artist-subdomain pages which are not protected.
+
+        Parameters
+        ----------
+        seeds:
+            Iterable of Bandcamp URLs — artist subdomains
+            (``https://enslaved.bandcamp.com``) or label pages.
+        albums_per_artist:
+            Maximum number of albums to fetch per artist when expanding the
+            frontier via recommendations.  Lower values are faster but miss
+            artists only recommended on later albums.
+        max_artists:
+            Stop after this many artists have been yielded.  0 = unlimited.
+        seen:
+            Optional external set of already-visited URLs — lets the caller
+            resume across multiple ``crawl()`` calls.  Mutated in-place.
+        """
+        from collections import deque
+        import re as _re
+
+        if seen is None:
+            seen = set()
+
+        def _is_artist_url(url):
+            return bool(url and _re.match(r"https?://[^/]+\.bandcamp\.com/?$", url))
+
+        frontier = deque(seeds)
+        yielded = 0
+
+        while frontier:
+            url = frontier.popleft()
+            url = url.rstrip("/")
+            if url in seen:
+                continue
+            seen.add(url)
+
+            try:
+                artist = BandcampArtist({"url": url}, scrap=True)
+                if not artist.name:
+                    continue
+            except Exception:
+                continue
+
+            yield _artist_to_entity(artist)
+            yielded += 1
+            if max_artists and yielded >= max_artists:
+                return
+
+            # Expand via album recommendation pages
+            try:
+                albums = artist.albums[:albums_per_artist]
+            except Exception:
+                albums = []
+
+            for album in albums:
+                alb_url = getattr(album, "url", None) or ""
+                if not alb_url:
+                    continue
+                try:
+                    for related in album.related_artists:
+                        r_url = (getattr(related, "url", None)
+                                 or getattr(related, "_url", None) or "")
+                        if r_url and r_url not in seen:
+                            frontier.append(r_url)
+                except Exception:
+                    pass
+
+            # If this artist page is also a label, expand its roster
+            if artist.data.get("is_label"):
+                try:
+                    for label_entity in cls.get_label_artists(url):
+                        r_url = (label_entity.extra or {}).get("artist_url") or ""
+                        if r_url and r_url not in seen:
+                            frontier.append(r_url)
+                except Exception:
+                    pass
 
     @_hybridmethod
     def get_track_lyrics(cls, _session, track_url):

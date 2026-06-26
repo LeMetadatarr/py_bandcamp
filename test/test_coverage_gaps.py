@@ -826,9 +826,12 @@ def test_label_missing_url_raises():
         BandcampLabel({}, scrap=False)
 
 
-def test_label_scrap_returns_empty():
-    """scrap() is a no-op TODO that returns {}."""
-    lb = BandcampLabel({"url": "https://l.bandcamp.com"}, scrap=False)
+def test_label_scrap_no_url_returns_empty():
+    """scrap() with no URL set returns {} without making any HTTP call."""
+    lb = BandcampLabel.__new__(BandcampLabel)
+    lb._url = None
+    lb._data = {}
+    lb._page_data = {}
     assert lb.scrap() == {}
 
 

@@ -540,7 +540,46 @@ class BandcampLabel:
             raise ValueError("bandcamp url is not set")
 
     def scrap(self):
-        self._page_data = {}  # TODO
+        if not self._url:
+            return {}
+        try:
+            import json as _json
+            resp = requests.get(self._url)
+            if not resp.ok:
+                return {}
+            soup = BeautifulSoup(resp.text, "html.parser")
+
+            band_data: dict = {}
+            band_tag = soup.find(attrs={"data-band": True})
+            if band_tag:
+                try:
+                    band_data = _json.loads(band_tag["data-band"])
+                except Exception:
+                    pass
+
+            band_id = band_data.get("id")
+            name, location = None, None
+            loc_tag = soup.find(id="band-name-location")
+            if loc_tag:
+                name_span = loc_tag.find(class_="title")
+                loc_span = loc_tag.find(class_="location")
+                name = name_span.text.strip() if name_span else None
+                location = loc_span.text.strip() if loc_span else None
+            name = name or band_data.get("name")
+
+            img_tag = soup.find("div", id="bio-container")
+            image = None
+            if img_tag:
+                img = img_tag.find("img")
+                image = img["src"] if img else None
+
+            self._page_data = {k: v for k, v in {
+                "name": name, "location": location,
+                "image": image, "band_id": band_id,
+                "is_label": True,
+            }.items() if v is not None}
+        except Exception:
+            self._page_data = {}
         return self._page_data
 
     @staticmethod
@@ -627,7 +666,23 @@ class BandcampArtist:
             resp = requests.get(self._url)
             if not resp.ok:
                 return {}
+            import json as _json
             soup = BeautifulSoup(resp.text, "html.parser")
+
+            # Prefer data-band JSON — has the numeric id, name, subdomain,
+            # is_label flag and genre_id without a second HTTP call.
+            band_data: dict = {}
+            band_tag = soup.find(attrs={"data-band": True})
+            if band_tag:
+                try:
+                    band_data = _json.loads(band_tag["data-band"])
+                except Exception:
+                    pass
+
+            # Numeric band id: from data-band first, /releases fallback
+            band_id = band_data.get("id") or self._scrap_band_id(self._url)
+            is_label = bool(band_data.get("is_label"))
+
             loc_tag = soup.find(id="band-name-location")
             name, location = None, None
             if loc_tag:
@@ -635,6 +690,9 @@ class BandcampArtist:
                 loc_span = loc_tag.find(class_="location")
                 name = name_span.text.strip() if name_span else None
                 location = loc_span.text.strip() if loc_span else None
+            # data-band name as fallback (already present)
+            name = name or band_data.get("name")
+
             genre_tag = soup.find("dd", class_="genre") or soup.find("span", class_="genre")
             genre = genre_tag.text.strip() if genre_tag else None
             img_tag = soup.find("div", id="bio-container")
@@ -643,16 +701,22 @@ class BandcampArtist:
                 img = img_tag.find("img")
                 image = img["src"] if img else None
 
-            # Numeric band id — Bandcamp's artist root page does NOT carry
-            # ``item_sellers``, but the same artist's ``/releases`` page
-            # does (as a single-key dict whose key IS the band id). One
-            # extra cheap HTTP call avoids the band_id being permanently
-            # ``None`` for everyone using ``BandcampArtist.from_url``.
-            band_id = self._scrap_band_id(self._url)
+            # External/social links — Bandcamp artist pages embed links in
+            # a <div class="social-links"> or as data-url on icon anchors.
+            social: dict = {}
+            for a in soup.find_all("a", href=True):
+                href = a["href"]
+                for platform in ("twitter", "instagram", "facebook",
+                                 "youtube", "spotify", "tiktok", "linktree"):
+                    if platform in href and href not in social.values():
+                        social[platform] = href
+                        break
 
             self._page_data = {k: v for k, v in {
                 "name": name, "location": location,
                 "genre": genre, "image": image, "band_id": band_id,
+                "is_label": is_label or None,
+                "social": social or None,
             }.items() if v is not None}
         except Exception:
             self._page_data = {}
