@@ -304,6 +304,9 @@ def _artist_to_entity(artist: BandcampArtist) -> Entity:
             extra["country"] = country
     if artist.genre:
         extra["genre"] = artist.genre
+    social = artist.data.get("social") or {}
+    for platform, link in social.items():
+        extra[f"social_{platform}"] = link
     return Entity(name=artist.name or "", kind=EntityKind.GROUP,
                   external_ids=external_ids, extra=extra)
 
@@ -579,6 +582,100 @@ class BandCamp:
                         pass
         except Exception:
             return
+
+    @classmethod
+    def crawl(
+        cls,
+        seeds: list,
+        *,
+        albums_per_artist: int = 3,
+        max_artists: int = 0,
+        seen: set | None = None,
+    ):
+        """Yield Entity objects via related-artist BFS from seed profile URLs.
+
+        Starting from *seeds* (artist or label Bandcamp URLs), each artist's
+        albums are fetched and the "fans also bought" recommendation links on
+        those album pages are used to discover new artists.  Label URLs are
+        expanded via their roster.
+
+        This avoids ``bandcamp.com`` search/tag pages (Cloudflare-protected)
+        by relying entirely on artist-subdomain pages which are not protected.
+
+        Parameters
+        ----------
+        seeds:
+            Iterable of Bandcamp URLs — artist subdomains
+            (``https://enslaved.bandcamp.com``) or label pages.
+        albums_per_artist:
+            Maximum number of albums to fetch per artist when expanding the
+            frontier via recommendations.  Lower values are faster but miss
+            artists only recommended on later albums.
+        max_artists:
+            Stop after this many artists have been yielded.  0 = unlimited.
+        seen:
+            Optional external set of already-visited URLs — lets the caller
+            resume across multiple ``crawl()`` calls.  Mutated in-place.
+        """
+        from collections import deque
+        import re as _re
+
+        if seen is None:
+            seen = set()
+
+        def _is_artist_url(url):
+            return bool(url and _re.match(r"https?://[^/]+\.bandcamp\.com/?$", url))
+
+        frontier = deque(seeds)
+        yielded = 0
+
+        while frontier:
+            url = frontier.popleft()
+            url = url.rstrip("/")
+            if url in seen:
+                continue
+            seen.add(url)
+
+            try:
+                artist = BandcampArtist({"url": url}, scrap=True)
+                if not artist.name:
+                    continue
+            except Exception:
+                continue
+
+            yield _artist_to_entity(artist)
+            yielded += 1
+            if max_artists and yielded >= max_artists:
+                return
+
+            # Expand via album recommendation pages
+            try:
+                albums = artist.albums[:albums_per_artist]
+            except Exception:
+                albums = []
+
+            for album in albums:
+                alb_url = getattr(album, "url", None) or ""
+                if not alb_url:
+                    continue
+                try:
+                    for related in album.related_artists:
+                        r_url = (getattr(related, "url", None)
+                                 or getattr(related, "_url", None) or "")
+                        if r_url and r_url not in seen:
+                            frontier.append(r_url)
+                except Exception:
+                    pass
+
+            # If this artist page is also a label, expand its roster
+            if artist.data.get("is_label"):
+                try:
+                    for label_entity in cls.get_label_artists(url):
+                        r_url = (label_entity.extra or {}).get("artist_url") or ""
+                        if r_url and r_url not in seen:
+                            frontier.append(r_url)
+                except Exception:
+                    pass
 
     @_hybridmethod
     def get_track_lyrics(cls, _session, track_url):
