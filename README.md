@@ -220,6 +220,24 @@ plain `requests` if `curl_cffi` is not installed.
 | [`examples/08_to_mediavocab.py`](examples/08_to_mediavocab.py) | Full Release/Entity field walk-through |
 | [`examples/09_custom_session.py`](examples/09_custom_session.py) | Inject session, optional curl_cffi |
 | [`examples/10_label_catalog.py`](examples/10_label_catalog.py) | Label-level browsing |
+| [`examples/11_crawl.py`](examples/11_crawl.py) | Frontier crawling via related-artist BFS |
+
+## Frontier crawling
+
+`BandCamp.crawl()` walks the Bandcamp artist graph via album recommendation
+links ("fans also bought") without touching the Cloudflare-protected search
+endpoint. Pass a `seen` set to resume across multiple calls:
+
+```python
+from py_bandcamp import BandCamp
+
+seen = set()
+for entity in BandCamp.crawl(["https://enslaved.bandcamp.com"], max_artists=5, seen=seen):
+    print(entity.name, entity.extra.get("artist_url"))
+# resume — already-visited URLs are skipped
+for entity in BandCamp.crawl(["https://neurosis.bandcamp.com"], max_artists=5, seen=seen):
+    print(entity.name)
+```
 
 ## Docs
 
