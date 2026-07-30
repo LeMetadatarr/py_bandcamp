@@ -1,6 +1,13 @@
 from bs4 import BeautifulSoup
-from py_bandcamp.session import SESSION as requests
-from py_bandcamp.utils import extract_ldjson_blob, get_props, _extract_tralbum, _parse_iso_duration
+from py_bandcamp.session import HTTP as requests
+from py_bandcamp.utils import (
+    _extract_blob_from_text,
+    _extract_tralbum,
+    _parse_iso_duration,
+    _parse_ldjson,
+    extract_ldjson_blob,
+    get_props,
+)
 
 
 class BandcampTrack:
@@ -63,6 +70,26 @@ class BandcampTrack:
     @property
     def stream(self):
         return self.data.get("file_mp3-128")
+
+    @property
+    def item_id(self):
+        """Bandcamp internal item id from data-tralbum (stable across slug renames)."""
+        return self.data.get("item_id")
+
+    @property
+    def track_id(self):
+        """Bandcamp internal track id (from data-tralbum trackinfo)."""
+        return self.data.get("track_id")
+
+    @property
+    def band_id(self):
+        """Bandcamp internal band/artist id."""
+        return self.data.get("band_id")
+
+    @property
+    def album_id(self):
+        """Bandcamp internal album id this track belongs to, if any."""
+        return self.data.get("album_id")
 
     @staticmethod
     def get_album(url):
@@ -140,6 +167,25 @@ class BandcampTrack:
             if dur:
                 track["duration_secs"] = int(dur)
 
+        # Bandcamp's true numeric IDs from data-tralbum
+        current = tralbum.get("current") or {}
+        item_id = tralbum.get("id") or current.get("id")
+        if item_id is not None:
+            track["item_id"] = item_id
+        band_id = current.get("band_id") or tralbum.get("band_id")
+        if band_id is not None:
+            track["band_id"] = band_id
+        # On a /track/ page, current.type == "t" and current.id is the track id;
+        # album_id may be set if the track belongs to an album.
+        album_id = tralbum.get("album_id") or current.get("album_id")
+        if album_id is not None:
+            track["album_id"] = album_id
+        track_id = trackinfo.get("track_id") or trackinfo.get("id")
+        if track_id is None and current.get("type") == "t":
+            track_id = current.get("id")
+        if track_id is not None:
+            track["track_id"] = track_id
+
         return track
 
     def __repr__(self):
@@ -147,6 +193,65 @@ class BandcampTrack:
 
     def __str__(self):
         return self.url
+
+    def __eq__(self, other):
+        return str(self) == str(other)
+
+    def __hash__(self):
+        return hash(self.url)
+
+
+class BandcampSingle:
+    """A Bandcamp single — a /track/ release treated as a one-track album."""
+
+    release_type = "single"
+
+    def __init__(self, data):
+        self._data = data
+
+    @staticmethod
+    def from_url(url):
+        t = BandcampTrack({"url": url})
+        return BandcampSingle({
+            "url": url,
+            "title": t.title,
+            "artist": getattr(t.artist, "name", None) if t.artist else None,
+            "image": t.image,
+            "track": t,
+        })
+
+    @property
+    def url(self):
+        return self._data.get("url", "")
+
+    @property
+    def title(self):
+        return self._data.get("title") or self.url.split("/")[-1]
+
+    @property
+    def artist(self):
+        return self._data.get("artist")
+
+    @property
+    def image(self):
+        return self._data.get("image")
+
+    @property
+    def tracks(self):
+        t = self._data.get("track")
+        if t is None:
+            t = BandcampTrack({"url": self.url})
+        return [t]
+
+    @property
+    def data(self):
+        return self._data
+
+    def __str__(self):
+        return self.url
+
+    def __repr__(self):
+        return f"BandcampSingle:{self.title}"
 
     def __eq__(self, other):
         return str(self) == str(other)
@@ -184,7 +289,7 @@ class BandcampAlbum:
     @property
     def title(self):
         return self.data.get("title") or self.data.get("name") or \
-               self.url.split("/")[-1]
+               self.data.get("album_name") or self.url.split("/")[-1]
 
     @property
     def releases(self):
@@ -197,6 +302,21 @@ class BandcampAlbum:
     @property
     def keywords(self):
         return self.data.get("keywords") or []
+
+    @property
+    def album_id(self):
+        """Bandcamp internal album id from data-tralbum."""
+        return self.data.get("album_id")
+
+    @property
+    def item_id(self):
+        """Bandcamp internal item id (same as album_id for albums)."""
+        return self.data.get("item_id") or self.data.get("album_id")
+
+    @property
+    def band_id(self):
+        """Bandcamp internal band/artist id."""
+        return self.data.get("band_id")
 
     @property
     def tracks(self):
@@ -266,25 +386,51 @@ class BandcampAlbum:
 
     @staticmethod
     def get_tracks(url):
-        data = extract_ldjson_blob(url, clean=True)
+        resp = requests.get(url)
+        text = resp.text
+        data = _parse_ldjson(text, clean=True)
         if not data.get("track"):
             return []
 
-        data = data['track']
+        tralbum = _extract_tralbum(text)
+        current = tralbum.get("current") or {}
+        album_item_id = tralbum.get("id") or current.get("id")
+        band_id = current.get("band_id") or tralbum.get("band_id")
+        trackinfos = tralbum.get("trackinfo") or []
+        ti_by_num = {}
+        for ti in trackinfos:
+            try:
+                ti_by_num[int(ti["track_num"])] = ti
+            except (KeyError, TypeError, ValueError):
+                pass
 
         tracks = []
-
-        for entry in data.get('itemListElement', []):
+        for entry in data['track'].get('itemListElement', []):
             d = entry.get('item', {})
+            position = entry.get('position')
+            try:
+                pos_int = int(position)
+            except (TypeError, ValueError):
+                pos_int = None
             track = {
                 "title": d.get('name'),
                 "url": d.get('id') or url,
                 'type': d.get('type'),
-                "tracknum": entry.get('position'),
+                "tracknum": position,
                 "duration_iso": d.get('duration'),
             }
             for k, v in get_props(d).items():
                 track[k] = v
+            ti = ti_by_num.get(pos_int) or (
+                trackinfos[pos_int - 1] if pos_int is not None and 0 < pos_int <= len(trackinfos) else {}
+            )
+            track_id = ti.get("track_id") or ti.get("id")
+            if track_id is not None:
+                track["track_id"] = track_id
+            if album_item_id is not None:
+                track["album_id"] = album_item_id
+            if band_id is not None:
+                track["band_id"] = band_id
             tracks.append(BandcampTrack(track, parse=False))
         return tracks
 
@@ -334,12 +480,16 @@ class BandcampAlbum:
 
     @staticmethod
     def get_album_data(url):
-        data = extract_ldjson_blob(url, clean=True)
+        resp = requests.get(url)
+        text = resp.text
+        data = _parse_ldjson(text, clean=True)
         props = get_props(data)
         kwords = data.get('keywords', "")
         if isinstance(kwords, str):
             kwords = kwords.split(", ")
-        return {
+        artist_data = data.get('byArtist') or {}
+        publisher_data = data.get('publisher') or {}
+        result = {
             'dateModified': data.get('dateModified'),
             'datePublished': data.get('datePublished'),
             'description': data.get('description'),
@@ -349,8 +499,22 @@ class BandcampAlbum:
             "n_tracks": data.get('numTracks'),
             'image': data.get('image'),
             'featured_track_num': props.get('featured_track_num'),
-            'keywords': kwords
+            'keywords': kwords,
+            'artist': artist_data.get('name'),
+            'artist_url': (artist_data.get('id') or '').split('#')[0] or None,
+            'publisher': publisher_data.get('name'),
+            'publisher_url': (publisher_data.get('id') or '').split('#')[0] or None,
         }
+        tralbum = _extract_tralbum(text)
+        current = tralbum.get("current") or {}
+        item_id = tralbum.get("id") or current.get("id")
+        if item_id is not None:
+            result["album_id"] = item_id
+            result["item_id"] = item_id
+        band_id = current.get("band_id") or tralbum.get("band_id")
+        if band_id is not None:
+            result["band_id"] = band_id
+        return result
 
     def __repr__(self):
         return self.__class__.__name__ + ":" + self.title
@@ -376,7 +540,46 @@ class BandcampLabel:
             raise ValueError("bandcamp url is not set")
 
     def scrap(self):
-        self._page_data = {}  # TODO
+        if not self._url:
+            return {}
+        try:
+            import json as _json
+            resp = requests.get(self._url)
+            if not resp.ok:
+                return {}
+            soup = BeautifulSoup(resp.text, "html.parser")
+
+            band_data: dict = {}
+            band_tag = soup.find(attrs={"data-band": True})
+            if band_tag:
+                try:
+                    band_data = _json.loads(band_tag["data-band"])
+                except Exception:
+                    pass
+
+            band_id = band_data.get("id")
+            name, location = None, None
+            loc_tag = soup.find(id="band-name-location")
+            if loc_tag:
+                name_span = loc_tag.find(class_="title")
+                loc_span = loc_tag.find(class_="location")
+                name = name_span.text.strip() if name_span else None
+                location = loc_span.text.strip() if loc_span else None
+            name = name or band_data.get("name")
+
+            img_tag = soup.find("div", id="bio-container")
+            image = None
+            if img_tag:
+                img = img_tag.find("img")
+                image = img["src"] if img else None
+
+            self._page_data = {k: v for k, v in {
+                "name": name, "location": location,
+                "image": image, "band_id": band_id,
+                "is_label": True,
+            }.items() if v is not None}
+        except Exception:
+            self._page_data = {}
         return self._page_data
 
     @staticmethod
@@ -431,6 +634,31 @@ class BandcampArtist:
         if scrap:
             self.scrap()
 
+    @staticmethod
+    def _scrap_band_id(artist_url):
+        """Hit ``<artist_url>/releases`` and pull the band id out of the
+        embedded ``item_sellers`` dict. Returns ``None`` on any failure
+        — callers must tolerate it, since Bandcamp's HTML is not stable.
+        """
+        if not artist_url:
+            return None
+        try:
+            resp = requests.get(artist_url.rstrip("/") + "/releases")
+            if not resp.ok:
+                return None
+            blob = _extract_blob_from_text(resp.text) or {}
+        except Exception:
+            return None
+        sellers = blob.get("item_sellers") or {}
+        try:
+            if isinstance(sellers, dict) and sellers:
+                return int(next(iter(sellers)))
+            if isinstance(sellers, list) and sellers:
+                return int(sellers[0])
+        except (TypeError, ValueError):
+            return None
+        return None
+
     def scrap(self):
         if not self._url:
             return {}
@@ -438,7 +666,23 @@ class BandcampArtist:
             resp = requests.get(self._url)
             if not resp.ok:
                 return {}
+            import json as _json
             soup = BeautifulSoup(resp.text, "html.parser")
+
+            # Prefer data-band JSON — has the numeric id, name, subdomain,
+            # is_label flag and genre_id without a second HTTP call.
+            band_data: dict = {}
+            band_tag = soup.find(attrs={"data-band": True})
+            if band_tag:
+                try:
+                    band_data = _json.loads(band_tag["data-band"])
+                except Exception:
+                    pass
+
+            # Numeric band id: from data-band first, /releases fallback
+            band_id = band_data.get("id") or self._scrap_band_id(self._url)
+            is_label = bool(band_data.get("is_label"))
+
             loc_tag = soup.find(id="band-name-location")
             name, location = None, None
             if loc_tag:
@@ -446,6 +690,9 @@ class BandcampArtist:
                 loc_span = loc_tag.find(class_="location")
                 name = name_span.text.strip() if name_span else None
                 location = loc_span.text.strip() if loc_span else None
+            # data-band name as fallback (already present)
+            name = name or band_data.get("name")
+
             genre_tag = soup.find("dd", class_="genre") or soup.find("span", class_="genre")
             genre = genre_tag.text.strip() if genre_tag else None
             img_tag = soup.find("div", id="bio-container")
@@ -453,13 +700,40 @@ class BandcampArtist:
             if img_tag:
                 img = img_tag.find("img")
                 image = img["src"] if img else None
+
+            # External/social links — Bandcamp artist pages embed links in
+            # a <div class="social-links"> or as data-url on icon anchors.
+            social: dict = {}
+            for a in soup.find_all("a", href=True):
+                href = a["href"]
+                for platform in ("twitter", "instagram", "facebook",
+                                 "youtube", "spotify", "tiktok", "linktree"):
+                    if platform in href and href not in social.values():
+                        social[platform] = href
+                        break
+
             self._page_data = {k: v for k, v in {
                 "name": name, "location": location,
-                "genre": genre, "image": image,
+                "genre": genre, "image": image, "band_id": band_id,
+                "is_label": is_label or None,
+                "social": social or None,
             }.items() if v is not None}
         except Exception:
             self._page_data = {}
         return self._page_data
+
+    @property
+    def band_id(self):
+        """Numeric Bandcamp band/artist id — the canonical cross-platform
+        identifier for an artist. Same value other ``Bandcamp*`` models
+        expose under ``.band_id`` for tracks and albums."""
+        return self.data.get("band_id")
+
+    @property
+    def item_id(self):
+        """Alias for :attr:`band_id` — matches the property name used on
+        :class:`BandcampTrack` and :class:`BandcampAlbum` for symmetry."""
+        return self.band_id
 
     @property
     def featured_album(self):
@@ -472,23 +746,32 @@ class BandcampArtist:
         return self.featured_album.featured_track
 
     @staticmethod
-    def get_albums(url):
+    def get_albums(url, scrap=False, include_singles=False):
         albums = []
+        singles = []
         soup = BeautifulSoup(requests.get(url).text, "html.parser")
-        for album in soup.find_all("a"):
-            title_tag = album.find("p", {"class": "title"})
+        for item in soup.find_all("a"):
+            title_tag = item.find("p", {"class": "title"})
             if not title_tag:
                 continue
             title = title_tag.text.strip()
-            art_div = album.find("div", {"class": "art"})
+            art_div = item.find("div", {"class": "art"})
             art_img = art_div.find("img") if art_div else None
             art = art_img["src"] if art_img else None
-            href = album.get("href", "")
-            album_url = url + href
-            albums.append(BandcampAlbum({"album_name": title,
-                                         "image": art,
-                                         "url": album_url}))
+            href = item.get("href", "")
+            item_url = url.rstrip("/") + href
+            if "/track/" in href:
+                singles.append(BandcampSingle({"url": item_url, "title": title, "image": art}))
+            elif "/album/" in href:
+                albums.append(BandcampAlbum({"album_name": title, "image": art, "url": item_url}, scrap=scrap))
+        if include_singles:
+            return albums, singles
         return albums
+
+    @staticmethod
+    def get_singles(url):
+        _, singles = BandcampArtist.get_albums(url, include_singles=True)
+        return singles
 
     @property
     def albums(self):

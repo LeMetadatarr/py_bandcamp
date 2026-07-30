@@ -9,10 +9,11 @@ description = "Bandcamp data scraper"
 license = { text = "Apache-2.0" }
 authors = [{ name = "jarbasAI", email = "jarbasai@mailfence.com" }]
 requires-python = ">=3.8"
-dependencies = ["beautifulsoup4", "requests"]
+dependencies = ["beautifulsoup4", "requests", "mediavocab>=1.0.0"]
 
 [project.optional-dependencies]
-test = ["pytest"]
+test = ["pytest", "vcrpy", "pytest-vcr"]
+stealth = ["curl-cffi"]
 
 [project.urls]
 Homepage = "https://github.com/OpenJarbas/py_bandcamp"

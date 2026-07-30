@@ -1,227 +1,69 @@
-# py_bandcamp — Developer Reference
+# py_bandcamp: API reference
 
-py_bandcamp scrapes Bandcamp pages to provide search, streaming, and metadata access without an official API.
+## `BandCamp.crawl(seeds, *, albums_per_artist=3, max_artists=0, seen=None)`
 
----
+```python
+@classmethod
+def crawl(
+    cls,
+    seeds: list,
+    *,
+    albums_per_artist: int = 3,
+    max_artists: int = 0,
+    seen: set | None = None,
+) -> Iterator[Entity]:
+```
 
-## BandCamp (main interface)
+Generator classmethod. Performs a breadth-first search over the Bandcamp artist
+graph starting from *seeds* and yields `mediavocab.Entity` for each discovered
+artist.
+
+**Discovery strategy**: for each artist URL dequeued from the frontier:
+
+1. Fetches the artist page (`BandcampArtist`, `scrap=True`).
+2. Yields an `Entity` for that artist.
+3. Fetches up to `albums_per_artist` albums and scrapes their
+   `related_artists` (the "fans also bought" widget) to expand the frontier.
+4. If `artist.data["is_label"]` is truthy, calls `BandCamp.get_label_artists(url)`
+   and enqueues every roster member URL.
+
+Relies exclusively on artist-subdomain pages, which are not behind the
+Cloudflare bot challenge that protects `bandcamp.com/search`.
+
+**Parameters**
+
+| Parameter | Type | Default | Notes |
+|---|---|---|---|
+| `seeds` | `list[str]` | none | Bandcamp artist or label URLs to start from |
+| `albums_per_artist` | `int` | `3` | Albums checked per artist when expanding via recommendations |
+| `max_artists` | `int` | `0` | Stop after this many entities yielded. `0` means unlimited |
+| `seen` | `set \| None` | `None` | Mutable URL set shared across calls for resumability, mutated in-place |
+
+**Returns**: `Iterator[mediavocab.Entity]`
+
+**Example**
 
 ```python
 from py_bandcamp import BandCamp
-```
 
-### Search
-
-```python
-# Search across all types (returns generator, auto-paginates up to max_pages)
-for result in BandCamp.search("black metal", albums=True, tracks=True,
-                               artists=True, labels=False, max_pages=10):
-    print(type(result).__name__, result)
-
-# Single-type convenience wrappers
-for t in BandCamp.search_tracks("astronaut problems"):
-    print(t.title, t.url)
-
-for a in BandCamp.search_albums("iii"):
-    print(a.title, a.data.get("artist"))
-
-for ar in BandCamp.search_artists("Perturbator"):
-    print(ar.name, ar.genre)
-
-for lb in BandCamp.search_labels("Nuclear Blast"):
-    print(lb.name, lb.location)
-```
-
-`search()` paginates automatically and yields `BandcampTrack`, `BandcampAlbum`,
-`BandcampArtist`, or `BandcampLabel` instances. Results are deduplicated by URL
-across pages. `max_pages` (default 10) caps how many Bandcamp pages are fetched.
-
-When only one result type is requested, the Bandcamp `item_type` filter is sent
-so the results are more precise.
-
-### Tag search
-
-```python
-# Search by genre tag (wraps search() with the tag as query)
-for result in BandCamp.search_tag("black-metal", albums=True, tracks=True,
-                                   artists=True, labels=False, max_pages=5):
-    print(result)
-
-# Get all known genre/subgenre tag names
-tags = BandCamp.tags()                  # flat list of strings
-tags = BandCamp.tags(tag_list=False)    # {"genres": [...], "subgenres": {...}}
-print("black-metal" in BandCamp.tags()) # True
-```
-
-### Streaming
-
-```python
-# Get a direct MP3-128 stream URL for a track page
-stream_url = BandCamp.get_stream_url("https://artist.bandcamp.com/track/song")
-# Returns the CDN token URL, or the original URL if no stream is available.
-# Note: stream URLs are time-limited tokens (~1 hour).
-
-# Batch
-urls = BandCamp.get_streams(["https://a.bandcamp.com/track/x",
-                              "https://b.bandcamp.com/track/y"])
-```
-
-### Recommendations & related artists
-
-```python
-# Albums Bandcamp recommends for fans of a given album
-recs = BandCamp.get_recommendations("https://artist.bandcamp.com/album/title")
-# Returns list of BandcampAlbum (title, artist, url, image — no full scrape)
-
-# Unique artists extracted from those recommendations
-artists = BandCamp.get_related_artists("https://artist.bandcamp.com/album/title")
-# Returns list of BandcampArtist (name, url — no full scrape)
-```
-
-These are also available as properties on `BandcampAlbum`:
-
-```python
-album = BandcampAlbum.from_url("https://artist.bandcamp.com/album/title")
-album.recommendations   # list[BandcampAlbum]
-album.related_artists   # list[BandcampArtist]
-```
-
-Bandcamp populates the "If you like…" section with ~6–8 albums from fans who also
-own the current album. Availability depends on the album having enough purchase/fan data.
-
-### Lyrics
-
-```python
-lyrics = BandCamp.get_track_lyrics("https://artist.bandcamp.com/track/song")
-# Returns the lyrics text, or "lyrics unavailable" if not present.
+seen = set()
+for entity in BandCamp.crawl(["https://enslaved.bandcamp.com"], max_artists=10, seen=seen):
+    print(entity.name, entity.extra.get("artist_url"))
+# Pass the same seen set to resume without revisiting already-visited URLs
+for entity in BandCamp.crawl(["https://neurosis.bandcamp.com"], max_artists=10, seen=seen):
+    print(entity.name)
 ```
 
 ---
 
-## BandcampTrack
+This file previously listed all public methods. See the split docs instead:
 
-```python
-from py_bandcamp import BandcampTrack
-
-# Load from URL (fetches and parses the track page)
-track = BandcampTrack.from_url("https://artist.bandcamp.com/track/song")
-
-# Construct without fetching (e.g. from search results)
-track = BandcampTrack({"url": "...", "title": "..."}, parse=False)
-
-# Fetch page data later
-track.parse_page()
-```
-
-| Property | Type | Description |
-|---|---|---|
-| `url` | `str` | Canonical Bandcamp URL |
-| `title` | `str` | Track title |
-| `image` | `str\|None` | Album art URL |
-| `stream` | `str\|None` | Direct MP3-128 CDN URL |
-| `duration` | `int` | Duration in seconds (0 if unavailable) |
-| `track_num` | `int\|None` | Track number in album |
-| `data` | `dict` | All parsed metadata |
-| `album` | `BandcampAlbum\|None` | Album this track belongs to (fetches page) |
-| `artist` | `BandcampArtist\|None` | Artist (fetches page) |
-
-`stream` and `duration` are populated after `parse_page()` or `from_url()`.
-Search results have `parse=False` by default — call `track.parse_page()` to load them.
+- [Model reference](models.md)
+- [Search and discovery](search-and-discovery.md)
+- [mediavocab converters](converters.md)
+- [Transport / curl_cffi](transport.md)
+- [Getting started](getting-started.md)
+- [Index](index.md)
 
 ---
-
-## BandcampAlbum
-
-```python
-from py_bandcamp import BandcampAlbum
-
-album = BandcampAlbum.from_url("https://artist.bandcamp.com/album/lp")
-
-# Construct without scraping
-album = BandcampAlbum({"url": "...", "title": "..."}, scrap=False)
-```
-
-| Property | Type | Description |
-|---|---|---|
-| `url` | `str` | Canonical Bandcamp URL |
-| `title` | `str` | Album title |
-| `image` | `str\|None` | Album art URL |
-| `keywords` | `list[str]` | Genre/tag keywords |
-| `tracks` | `list[BandcampTrack]` | Track listing (with `track_num` and `duration_iso`) |
-| `featured_track` | `BandcampTrack\|None` | Featured track |
-| `artist` | `BandcampArtist\|None` | Artist (fetches page) |
-| `releases` | `list[dict]` | Release formats (`format`, `title`, `url`, `image`) |
-| `comments` | `list[dict]` | Comments (`author`, `text`, `image`) |
-| `recommendations` | `list[BandcampAlbum]` | Albums Bandcamp recommends for fans of this album |
-| `related_artists` | `list[BandcampArtist]` | Unique artists from `recommendations` |
-
-Tracks in `album.tracks` have `duration` populated from the ISO 8601 duration
-on the album page. They do **not** have stream URLs — call `track.parse_page()`
-on individual tracks to load those.
-
-`recommendations` scrapes the "If you like…" section at the bottom of the album page.
-Availability depends on the album having enough purchase/fan data on Bandcamp.
-
----
-
-## BandcampArtist
-
-```python
-from py_bandcamp import BandcampArtist
-
-artist = BandcampArtist.from_url("https://artist.bandcamp.com")
-```
-
-| Property | Type | Description |
-|---|---|---|
-| `url` | `str` | Bandcamp artist URL |
-| `name` | `str` | Artist name |
-| `genre` | `str\|None` | Genre string |
-| `location` | `str\|None` | Location string |
-| `tags` | `list[str]` | Tag strings |
-| `image` | `str\|None` | Artist image URL |
-| `albums` | `list[BandcampAlbum]` | Albums (scrapes artist page) |
-| `featured_album` | `BandcampAlbum` | First album from `/releases` |
-| `featured_track` | `BandcampTrack\|None` | Featured track of the featured album |
-
----
-
-## BandcampLabel
-
-```python
-from py_bandcamp import BandcampLabel
-
-label = BandcampLabel.from_url("https://label.bandcamp.com")
-```
-
-| Property | Type | Description |
-|---|---|---|
-| `url` | `str` | Bandcamp label URL |
-| `name` | `str` | Label name |
-| `location` | `str\|None` | Location string |
-| `tags` | `list[str]` | Tag strings |
-| `image` | `str\|None` | Label image URL |
-
----
-
-## Session / Custom HTTP client
-
-By default a plain `requests.Session` is used. You can replace it with any
-session-like object (e.g. one with custom headers, a retry adapter, or a mock):
-
-```python
-import requests
-from py_bandcamp import set_session
-
-# Custom session with a User-Agent header
-s = requests.Session()
-s.headers.update({"User-Agent": "my-app/1.0"})
-set_session(s)
-
-# Or inject a mock in tests
-from unittest.mock import MagicMock
-set_session(MagicMock())
-```
-
-The session object must implement `.get(url, **kwargs)` returning a response
-with `.text`, `.content`, `.ok`, and `.status_code`.
+[Home](index.md)
