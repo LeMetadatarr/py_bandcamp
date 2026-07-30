@@ -8,7 +8,7 @@ paginate automatically and deduplicate results by URL across pages.
 ```python
 from py_bandcamp import BandCamp
 
-# Mixed search — yields Release or Entity depending on result type
+# Mixed search: yields Release or Entity depending on result type
 for result in BandCamp.search("electric wizard", albums=True, tracks=True,
                                artists=True, labels=False, max_pages=5):
     print(type(result).__name__, result)
@@ -55,8 +55,8 @@ tags = BandCamp.tags()                 # flat list[str]
 tags_dict = BandCamp.tags(tag_list=False)  # {"genres": [...], "subgenres": {...}}
 ```
 
-`BandCamp.search_tag` — `py_bandcamp/__init__.py:399`
-`BandCamp.tags` — `py_bandcamp/__init__.py:386`
+`BandCamp.search_tag`: `py_bandcamp/__init__.py:399`
+`BandCamp.tags`: `py_bandcamp/__init__.py:386`
 
 ---
 
@@ -65,12 +65,12 @@ tags_dict = BandCamp.tags(tag_list=False)  # {"genres": [...], "subgenres": {...
 ```python
 from py_bandcamp import BandCamp, BandcampAlbum
 
-# "If you like…" section — list[Release]
+# "If you like..." section: list[Release]
 recs = BandCamp.get_recommendations("https://naxatras.bandcamp.com/album/iii")
 for r in recs:
     print(r.work.title, r.uri)
 
-# Unique artists from those recommendations — list[Entity]
+# Unique artists from those recommendations: list[Entity]
 artists = BandCamp.get_related_artists("https://naxatras.bandcamp.com/album/iii")
 for a in artists:
     print(a.name, a.extra.get("artist_url"))
@@ -83,11 +83,11 @@ for a in album.related_artists:        # list[BandcampArtist]
     print(a.name, a.url)
 ```
 
-`BandCamp.get_recommendations` — `py_bandcamp/__init__.py:506`
-`BandcampAlbum.get_recommendations` — `py_bandcamp/models.py:438`
+`BandCamp.get_recommendations`: `py_bandcamp/__init__.py:506`
+`BandcampAlbum.get_recommendations`: `py_bandcamp/models.py:438`
 
 Bandcamp populates the recommendations widget only for albums with enough
-fan/purchase data; `get_recommendations` returns an empty list when the
+fan and purchase data. `get_recommendations` returns an empty list when the
 widget is absent.
 
 ---
@@ -121,7 +121,7 @@ Pass a `seen` set to prevent revisiting URLs across multiple `crawl()` calls:
 ```python
 seen = set()
 
-# First run — start from one seed
+# First run: start from one seed
 for entity in BandCamp.crawl(
     ["https://enslaved.bandcamp.com"],
     max_artists=100,
@@ -129,7 +129,7 @@ for entity in BandCamp.crawl(
 ):
     print(entity.name)
 
-# Second run — add a new seed; URLs already in seen are skipped
+# Second run: add a new seed. URLs already in seen are skipped
 for entity in BandCamp.crawl(
     ["https://neurosis.bandcamp.com"],
     max_artists=100,
@@ -144,7 +144,10 @@ for entity in BandCamp.crawl(
 
 When `BandcampArtist.data["is_label"]` is `True`, `crawl()` calls
 `BandCamp.get_label_artists(url)` to pull the label roster and enqueue
-each signed artist into the frontier — letting a single label seed expand
+each signed artist into the frontier, letting a single label seed expand
 into the full signed catalog.
 
-`BandCamp.crawl` — `py_bandcamp/__init__.py:586`
+`BandCamp.crawl`: `py_bandcamp/__init__.py:586`
+
+---
+[← Model reference](models.md) · [Home](index.md) · [mediavocab converters →](converters.md)

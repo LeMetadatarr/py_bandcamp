@@ -29,7 +29,7 @@ for a in release.work.tracklist:
     print(a.position, a.work.title, a.work.runtime)
 ```
 
-`BandCamp.album_to_release` — `py_bandcamp/__init__.py:487`
+`BandCamp.album_to_release`: `py_bandcamp/__init__.py:487`
 
 ## Fetch a track
 
@@ -42,7 +42,7 @@ release = BandCamp.track_to_release(
 print(release.work.title, release.codec, release.bitrate)
 ```
 
-`BandCamp.track_to_release` — `py_bandcamp/__init__.py:497`
+`BandCamp.track_to_release`: `py_bandcamp/__init__.py:497`
 
 ## Get a stream URL
 
@@ -55,7 +55,7 @@ url = BandCamp.get_stream_url(
 # https://t4.bcbits.com/stream/...  (time-limited token, ~1 hour)
 ```
 
-`BandCamp.get_stream_url` — `py_bandcamp/__init__.py:532`
+`BandCamp.get_stream_url`: `py_bandcamp/__init__.py:532`
 
 ## Browse by tag (no curl_cffi needed)
 
@@ -66,5 +66,8 @@ for release in BandCamp.search_tag("doom-metal", albums=True, tracks=False, max_
     print(release.work.title, release.uri)
 ```
 
-Tag browse hits the same album/track pages as a direct URL fetch, so it is not
-affected by the search-page bot challenge.
+Tag browse hits the same album and track pages as a direct URL fetch, so it is
+not affected by the search-page bot challenge.
+
+---
+[Home](index.md) · [Model reference →](models.md)

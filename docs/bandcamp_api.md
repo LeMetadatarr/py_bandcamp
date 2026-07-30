@@ -1,4 +1,4 @@
-# py_bandcamp — API reference
+# py_bandcamp: API reference
 
 ## `BandCamp.crawl(seeds, *, albums_per_artist=3, max_artists=0, seen=None)`
 
@@ -18,7 +18,7 @@ Generator classmethod. Performs a breadth-first search over the Bandcamp artist
 graph starting from *seeds* and yields `mediavocab.Entity` for each discovered
 artist.
 
-**Discovery strategy** — for each artist URL dequeued from the frontier:
+**Discovery strategy**: for each artist URL dequeued from the frontier:
 
 1. Fetches the artist page (`BandcampArtist`, `scrap=True`).
 2. Yields an `Entity` for that artist.
@@ -34,12 +34,12 @@ Cloudflare bot challenge that protects `bandcamp.com/search`.
 
 | Parameter | Type | Default | Notes |
 |---|---|---|---|
-| `seeds` | `list[str]` | — | Bandcamp artist or label URLs to start from |
+| `seeds` | `list[str]` | none | Bandcamp artist or label URLs to start from |
 | `albums_per_artist` | `int` | `3` | Albums checked per artist when expanding via recommendations |
-| `max_artists` | `int` | `0` | Stop after this many entities yielded; `0` = unlimited |
-| `seen` | `set \| None` | `None` | Mutable URL set shared across calls for resumability; mutated in-place |
+| `max_artists` | `int` | `0` | Stop after this many entities yielded. `0` means unlimited |
+| `seen` | `set \| None` | `None` | Mutable URL set shared across calls for resumability, mutated in-place |
 
-**Returns** — `Iterator[mediavocab.Entity]`
+**Returns**: `Iterator[mediavocab.Entity]`
 
 **Example**
 
@@ -64,3 +64,6 @@ This file previously listed all public methods. See the split docs instead:
 - [Transport / curl_cffi](transport.md)
 - [Getting started](getting-started.md)
 - [Index](index.md)
+
+---
+[Home](index.md)
