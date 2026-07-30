@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.12.0a3](https://github.com/TigreGotico/py_bandcamp/tree/0.12.0a3) (2026-07-30)
+
+[Full Changelog](https://github.com/TigreGotico/py_bandcamp/compare/0.12.0a2...0.12.0a3)
+
+**Merged pull requests:**
+
+- docs: rewrite README in Simplified Technical English [\#27](https://github.com/TigreGotico/py_bandcamp/pull/27) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.12.0a2](https://github.com/TigreGotico/py_bandcamp/tree/0.12.0a2) (2026-06-27)
 
 [Full Changelog](https://github.com/TigreGotico/py_bandcamp/compare/0.12.0a1...0.12.0a2)
