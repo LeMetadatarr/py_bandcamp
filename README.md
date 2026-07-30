@@ -1,14 +1,14 @@
 # py_bandcamp
 
-Python scraper for Bandcamp — fetch album/track/artist metadata, stream URLs,
-lyrics, recommendations, and search results.
+py_bandcamp is a Python scraper for Bandcamp. It fetches album, track, and
+artist metadata, stream URLs, lyrics, recommendations, and search results.
 
-Returns [`mediavocab`](https://github.com/OpenVoiceOS/mediavocab) `Release` and
-`Entity` objects for typed, structured metadata.
+It returns [`mediavocab`](https://github.com/OpenVoiceOS/mediavocab) `Release`
+and `Entity` objects for typed, structured metadata.
 
-`mediavocab>=1.0.0` is a hard runtime dependency — every search/recommendation
-helper hands back validated `Release` / `Entity` models. There is no dict
-fallback.
+`mediavocab>=1.0.0` is a hard runtime dependency. Every search and
+recommendation helper returns validated `Release` or `Entity` models. There is
+no dict fallback.
 
 ## Install
 
@@ -32,7 +32,7 @@ from py_bandcamp import BandCamp, BandcampTrack, BandcampAlbum, BandcampArtist
 url = BandCamp.get_stream_url("https://deadunicorn.bandcamp.com/track/astronaut-problems")
 print(url)  # https://t4.bcbits.com/stream/...
 
-# Search — returns mediavocab Release objects
+# Search: returns mediavocab Release objects
 for release in BandCamp.search_tracks("astronaut problems"):
     artist = release.work.credits[0].entity.name if release.work.credits else ""
     print(release.work.title, artist, release.uri)
@@ -41,7 +41,7 @@ for release in BandCamp.search_albums("black metal"):
     artist = release.work.credits[0].entity.name if release.work.credits else ""
     print(release.work.title, artist)
 
-# Search artists/labels — returns mediavocab Entity objects
+# Search artists/labels: returns mediavocab Entity objects
 for entity in BandCamp.search_artists("Perturbator"):
     print(entity.name, entity.extra.get("genre"), entity.extra.get("location"))
 
@@ -60,7 +60,7 @@ for entity in BandCamp.get_related_artists("https://naxatras.bandcamp.com/album/
 
 ### Return types at a glance
 
-**`Release`** — from `search_tracks`, `search_albums`, `search_tag`, `get_recommendations`:
+**`Release`**, from `search_tracks`, `search_albums`, `search_tag`, `get_recommendations`:
 
 ```python
 release.uri                                       # canonical Bandcamp permalink (no query string)
@@ -71,11 +71,11 @@ release.work.runtime                              # duration in seconds (tracks 
 release.work.content_genres                       # list of GENRE_* tokens + raw Bandcamp tags
 release.work.credits[0].entity.name               # artist display name (if available)
 release.work.credits[0].relation_role             # RelationRole.PERFORMER (tracks) / CREATOR (albums)
-release.work.tracklist                            # list[Appearance] — populated by album_to_release(...)
+release.work.tracklist                            # list[Appearance], populated by album_to_release(...)
 release.release_date                              # IsoDate-validated string or None
 release.license                                   # License object (.identifier "CC-BY-SA-4.0") or None
 release.license.is_open() if release.license else False   # True for CC*/CC0/PD, False otherwise
-release.codec                                     # "mp3" — Bandcamp's free streaming preview
+release.codec                                     # "mp3", Bandcamp's free streaming preview
 release.bitrate                                   # "128" (kbps)
 release.audio_channels                            # "stereo"
 release.label                                     # EntityRef for the imprint, or None when self-released
@@ -90,7 +90,7 @@ release.external_ids["bandcamp_track_id"]         # numeric track id
 ### Full-fidelity album conversion
 
 `BandCamp.search_*` keeps payloads small by skipping the per-album track
-fetch. When you want the ordered tracklist, use `album_to_release`:
+fetch. To get the ordered tracklist, use `album_to_release`:
 
 ```python
 from py_bandcamp import BandCamp
@@ -110,7 +110,7 @@ url = BandCamp.get_stream_url(
 )
 print(url)  # https://t4.bcbits.com/stream/...
 
-# Search — yields Release objects
+# Search: yields Release objects
 for release in BandCamp.search_albums("black metal"):
     artist = release.work.credits[0].entity.name if release.work.credits else ""
     print(release.work.title, artist, release.uri)
@@ -118,18 +118,18 @@ for release in BandCamp.search_albums("black metal"):
 
 ## Public API
 
-### `BandCamp` — main facade (`py_bandcamp/__init__.py`)
+### `BandCamp`: main facade (`py_bandcamp/__init__.py`)
 
 | Method | Returns | Notes |
 |---|---|---|
-| `BandCamp.album_to_release(url, include_tracklist=True)` | `Release` | Fetches album page; tracklist populated when `include_tracklist=True` |
+| `BandCamp.album_to_release(url, include_tracklist=True)` | `Release` | Fetches album page. Tracklist populated when `include_tracklist=True` |
 | `BandCamp.track_to_release(url)` | `Release` | Fetches track page |
 | `BandCamp.get_stream_url(url)` | `str` | Direct MP3-128 CDN token URL (time-limited) |
 | `BandCamp.get_streams(urls)` | `list[str]` | Batch of `get_stream_url` |
 | `BandCamp.get_track_lyrics(url)` | `str` | Lyrics text or `"lyrics unavailable"` |
 | `BandCamp.get_recommendations(url)` | `list[Release]` | "If you like…" albums |
 | `BandCamp.get_related_artists(url)` | `list[Entity]` | Unique artists from recommendations |
-| `BandCamp.search(name, ...)` | `Iterator[Release\|Entity]` | Paginated; auto-deduplicates |
+| `BandCamp.search(name, ...)` | `Iterator[Release\|Entity]` | Paginated. Auto-deduplicates |
 | `BandCamp.search_tracks(name)` | `Iterator[Release]` | |
 | `BandCamp.search_albums(name)` | `Iterator[Release]` | |
 | `BandCamp.search_artists(name)` | `Iterator[Entity]` | |
@@ -155,15 +155,15 @@ for release in BandCamp.search_albums("black metal"):
 | `BandCamp.track_to_release(track_or_url)` | `BandcampTrack\|str` → `Release` |
 
 Search helpers (`search_*`, `get_recommendations`) call the internal
-converters automatically — you only call them directly when you already hold
+converters automatically. You only call them directly when you already hold
 a raw model object.
 
-## Search caveat — Fastly JS challenge
+## Search caveat: Fastly JS challenge
 
-Bandcamp's `/search` endpoint is fronted by a Fastly bot challenge that
-rejects vanilla `requests` TLS fingerprints. Static HTML parsing (tag browse,
-album/track page fetches) is unaffected. For live keyword search install the
-`[stealth]` extra and set `PYBANDCAMP_TRANSPORT=curl_cffi` (see
+Bandcamp's `/search` endpoint sits behind a Fastly bot challenge that rejects
+vanilla `requests` TLS fingerprints. Static HTML parsing, such as tag browse
+and album or track page fetches, is unaffected. For live keyword search,
+install the `[stealth]` extra and set `PYBANDCAMP_TRANSPORT=curl_cffi` (see
 [docs/transport.md](docs/transport.md)). Playwright is not required.
 
 ## mediavocab integration
@@ -203,8 +203,8 @@ list(bc.search_tracks("doom metal"))
 ```
 
 `PYBANDCAMP_TRANSPORT=curl_cffi` makes `default_session()` return a
-`curl_cffi.requests.Session(impersonate="chrome")`. Falls back silently to
-plain `requests` if `curl_cffi` is not installed.
+`curl_cffi.requests.Session(impersonate="chrome")`. If `curl_cffi` is not
+installed, it falls back silently to plain `requests`.
 
 ## Examples
 
@@ -224,9 +224,10 @@ plain `requests` if `curl_cffi` is not installed.
 
 ## Frontier crawling
 
-`BandCamp.crawl()` walks the Bandcamp artist graph via album recommendation
-links ("fans also bought") without touching the Cloudflare-protected search
-endpoint. Pass a `seen` set to resume across multiple calls:
+`BandCamp.crawl()` walks the Bandcamp artist graph through album
+recommendation links ("fans also bought") without touching the
+Cloudflare-protected search endpoint. Pass a `seen` set to resume across
+multiple calls:
 
 ```python
 from py_bandcamp import BandCamp
@@ -234,7 +235,7 @@ from py_bandcamp import BandCamp
 seen = set()
 for entity in BandCamp.crawl(["https://enslaved.bandcamp.com"], max_artists=5, seen=seen):
     print(entity.name, entity.extra.get("artist_url"))
-# resume — already-visited URLs are skipped
+# resume: already-visited URLs are skipped
 for entity in BandCamp.crawl(["https://neurosis.bandcamp.com"], max_artists=5, seen=seen):
     print(entity.name)
 ```
@@ -249,8 +250,15 @@ for entity in BandCamp.crawl(["https://neurosis.bandcamp.com"], max_artists=5, s
 
 ## Notes
 
-- Stream URLs are time-limited CDN tokens — do not cache them.
-- Bandcamp has no public API; this library scrapes HTML and may break on markup changes.
+- Stream URLs are time-limited CDN tokens. Do not cache them.
+- Bandcamp has no public API. This library scrapes HTML and may break on markup changes.
+
+## Related projects
+
+- [mediavocab](https://github.com/OpenVoiceOS/mediavocab): the typed `Release` and `Entity` schema this library returns.
+- [ovos-ocp-bandcamp-plugin](https://github.com/OpenVoiceOS/ovos-ocp-bandcamp-plugin): OCP media plugin built on py_bandcamp.
+- [ovos-skill-bandcamp](https://github.com/OpenVoiceOS/ovos-skill-bandcamp): OVOS voice skill built on py_bandcamp.
+- [bandcamp-ma-provider](https://github.com/TigreGotico/bandcamp-ma-provider): Music Assistant provider built on py_bandcamp.
 
 ## License
 

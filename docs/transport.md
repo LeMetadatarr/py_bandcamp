@@ -1,6 +1,6 @@
 # Transport / HTTP session
 
-## Default session — `py_bandcamp/transport.py:52`
+## Default session: `py_bandcamp/transport.py:52`
 
 On import, `py_bandcamp.session` calls `transport.default_session()` and
 stores the result as the module-global `SESSION`. All submodules proxy
@@ -24,15 +24,15 @@ python your_script.py
 ```
 
 If `curl_cffi` is not installed the env var is silently ignored and the
-plain `requests` session is used — nothing hard-breaks, but search results
+plain `requests` session is used. Nothing hard-breaks, but search results
 may be empty or contain challenge HTML.
 
 The env var is read on each call to `default_session()`, so tests can flip it
 at runtime without restarting the process.
 
-`transport.default_session` — `py_bandcamp/transport.py:52`
+`transport.default_session`: `py_bandcamp/transport.py:52`
 
-## Global session replacement — `py_bandcamp/session.py:13`
+## Global session replacement: `py_bandcamp/session.py:13`
 
 ```python
 from py_bandcamp import set_session, get_session
@@ -50,7 +50,7 @@ current = get_session()
 The session object must implement `.get(url, **kwargs)` returning a response
 with `.text`, `.content`, `.ok`, and `.status_code`.
 
-## Per-instance session — `py_bandcamp/__init__.py:382`
+## Per-instance session: `py_bandcamp/__init__.py:382`
 
 ```python
 from py_bandcamp import BandCamp
@@ -69,9 +69,12 @@ global proxy and `bc.method()` (instance-style) through `bc._session`.
 
 | Operation | Affected by Fastly? |
 |---|---|
-| `BandCamp.search(...)` | Yes — keyword search hits `/search` |
-| `BandCamp.search_tag(...)` | No — browses tag pages, not `/search` |
-| `BandCamp.album_to_release(url)` | No — fetches album page directly |
-| `BandCamp.track_to_release(url)` | No — fetches track page directly |
-| `BandCamp.get_stream_url(url)` | No — parses `data-tralbum` from track page |
-| `BandCamp.get_recommendations(url)` | No — parses `#recommendations_container` |
+| `BandCamp.search(...)` | Yes, keyword search hits `/search` |
+| `BandCamp.search_tag(...)` | No, browses tag pages, not `/search` |
+| `BandCamp.album_to_release(url)` | No, fetches album page directly |
+| `BandCamp.track_to_release(url)` | No, fetches track page directly |
+| `BandCamp.get_stream_url(url)` | No, parses `data-tralbum` from track page |
+| `BandCamp.get_recommendations(url)` | No, parses `#recommendations_container` |
+
+---
+[← mediavocab converters](converters.md) · [Home](index.md)

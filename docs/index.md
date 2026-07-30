@@ -1,14 +1,14 @@
 # py_bandcamp
 
-Python scraper for Bandcamp — metadata, stream URLs, search, and discovery.
+py_bandcamp is a Python scraper for Bandcamp. It returns metadata, stream
+URLs, search results, and discovery data.
 
 ## Overview
 
 py_bandcamp scrapes Bandcamp album, track, and artist pages and converts the
 results into typed [`mediavocab`](https://github.com/OpenVoiceOS/mediavocab)
-`Release` and `Entity` objects. It requires no Bandcamp API key. Stream URL
-extraction, recommendations, tag browse, and free-text search are all
-supported.
+`Release` and `Entity` objects. It requires no Bandcamp API key. It supports
+stream URL extraction, recommendations, tag browse, and free-text search.
 
 ## Key classes
 

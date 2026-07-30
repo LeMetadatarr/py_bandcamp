@@ -10,22 +10,22 @@ call the public converters directly when you already hold a raw model object.
 
 ---
 
-## `BandCamp.album_to_release` — `py_bandcamp/__init__.py:487`
+## `BandCamp.album_to_release`: `py_bandcamp/__init__.py:487`
 
 ```python
 from py_bandcamp import BandCamp
 
 release = BandCamp.album_to_release(
     "https://naxatras.bandcamp.com/album/iii",
-    include_tracklist=True,   # default True; triggers track iteration
+    include_tracklist=True,   # default True, triggers track iteration
 )
 ```
 
 Accepts a URL string or a `BandcampAlbum` instance.
-`include_tracklist=False` skips per-track iteration — use this in search/
+`include_tracklist=False` skips per-track iteration. Use this in search or
 recommendation loops where the tracklist isn't needed.
 
-### Release fields — album
+### Release fields: album
 
 ```python
 release.uri                              # "https://naxatras.bandcamp.com/album/iii"
@@ -43,7 +43,7 @@ release.work.media_type                  # MediaType.MUSIC
 release.work.content_genres              # ["stoner-rock", "doom-metal", ...]
 release.work.credits[0].entity.name      # "Naxatras"
 release.work.credits[0].relation_role    # RelationRole.CREATOR
-release.work.tracklist                   # list[Appearance] — populated when include_tracklist=True
+release.work.tracklist                   # list[Appearance], populated when include_tracklist=True
 
 release.label                            # EntityRef(name="...", kind=EntityKind.ORGANISATION)
                                          # None when publisher == artist (self-released)
@@ -66,11 +66,11 @@ for a in release.work.tracklist:
     a.work.external_ids["bandcamp_track_url"]  # track URL (when known)
 ```
 
-`_album_to_release` — `py_bandcamp/__init__.py:208`
+`_album_to_release`: `py_bandcamp/__init__.py:208`
 
 ---
 
-## `BandCamp.track_to_release` — `py_bandcamp/__init__.py:497`
+## `BandCamp.track_to_release`: `py_bandcamp/__init__.py:497`
 
 ```python
 from py_bandcamp import BandCamp
@@ -82,7 +82,7 @@ release = BandCamp.track_to_release(
 
 Accepts a URL string or a `BandcampTrack` instance.
 
-### Release fields — track
+### Release fields: track
 
 ```python
 release.uri                              # canonical track URL
@@ -101,25 +101,25 @@ release.external_ids["bandcamp_band_url"]
 release.external_ids["bandcamp_album_id"]   # only when track belongs to an album
 ```
 
-`_track_to_release` — `py_bandcamp/__init__.py:155`
+`_track_to_release`: `py_bandcamp/__init__.py:155`
 
 ---
 
-## Genre mapping — `py_bandcamp/__init__.py:29`
+## Genre mapping: `py_bandcamp/__init__.py:29`
 
 Bandcamp tags are normalised to `mediavocab.taxonomy.genre` `GENRE_*` tokens
 where a mapping exists. Tags without a mapping pass through verbatim so no
 information is lost. Common aliases (`hip-hop`, `r&b`, `dnb`, `edm`) are
 handled by `_GENRE_ALIASES`.
 
-## License inference — `py_bandcamp/__init__.py:73`
+## License inference: `py_bandcamp/__init__.py:73`
 
 `release.license` is populated only when Bandcamp keyword tags contain a
 recognisable Creative Commons marker (`cc-by`, `cc-by-sa`, `cc0`, etc.).
 No CC hint → empty string. Bandcamp does not assert All-Rights-Reserved
 in machine-readable form so the library does not guess it.
 
-## Label / publisher — `py_bandcamp/__init__.py:273`
+## Label / publisher: `py_bandcamp/__init__.py:273`
 
 `release.label` is set to an `EntityRef` for the ld+json `publisher` field
 when `publisher != artist`. Self-released albums (the common case) have
@@ -127,10 +127,13 @@ when `publisher != artist`. Self-released albums (the common case) have
 
 ## Entity converters
 
-`_artist_to_entity` — `py_bandcamp/__init__.py:289`
-`_label_to_entity` — `py_bandcamp/__init__.py:310`
+`_artist_to_entity`: `py_bandcamp/__init__.py:289`
+`_label_to_entity`: `py_bandcamp/__init__.py:310`
 
 Both are called automatically by `search_artists` / `search_labels` /
 `get_related_artists`. They populate `entity.extra` with `artist_url`,
 `image`, `location`, `country` (parsed from `"City, Country"` format), and
 `genre` (artists only).
+
+---
+[← Search and discovery](search-and-discovery.md) · [Home](index.md) · [Transport / curl_cffi →](transport.md)
