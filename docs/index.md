@@ -6,7 +6,7 @@ URLs, search results, and discovery data.
 ## Overview
 
 py_bandcamp scrapes Bandcamp album, track, and artist pages and converts the
-results into typed [`mediavocab`](https://github.com/OpenVoiceOS/mediavocab)
+results into typed [`mediavocab`](https://github.com/TigreGotico/mediavocab)
 `Release` and `Entity` objects. It requires no Bandcamp API key. It supports
 stream URL extraction, recommendations, tag browse, and free-text search.
 
@@ -14,10 +14,10 @@ stream URL extraction, recommendations, tag browse, and free-text search.
 
 | Class | Purpose | Source |
 |---|---|---|
-| `BandCamp` | Main facade — search, convert, stream | `py_bandcamp/__init__.py:367` |
+| `BandCamp` | Main facade — search, convert, stream | `py_bandcamp/__init__.py:372` |
 | `BandcampAlbum` | Scrape an album page | `py_bandcamp/models.py:263` |
 | `BandcampTrack` | Scrape a track page | `py_bandcamp/models.py:13` |
-| `BandcampArtist` | Scrape an artist page | `py_bandcamp/models.py:590` |
+| `BandcampArtist` | Scrape an artist page | `py_bandcamp/models.py:629` |
 | `BandcampSingle` | `/track/` release as a one-track album | `py_bandcamp/models.py:204` |
 | `BandcampLabel` | Label metadata from search results | `py_bandcamp/models.py:532` |
 

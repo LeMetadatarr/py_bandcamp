@@ -16,7 +16,7 @@ test = ["pytest", "vcrpy", "pytest-vcr"]
 stealth = ["curl-cffi"]
 
 [project.urls]
-Homepage = "https://github.com/OpenJarbas/py_bandcamp"
+Homepage = "https://github.com/LeMetadatarr/py_bandcamp"
 
 [tool.setuptools.dynamic]
 version = { attr = "py_bandcamp.version.__version__" }

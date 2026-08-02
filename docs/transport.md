@@ -50,7 +50,7 @@ current = get_session()
 The session object must implement `.get(url, **kwargs)` returning a response
 with `.text`, `.content`, `.ok`, and `.status_code`.
 
-## Per-instance session: `py_bandcamp/__init__.py:382`
+## Per-instance session: `py_bandcamp/__init__.py:387`
 
 ```python
 from py_bandcamp import BandCamp

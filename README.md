@@ -3,7 +3,7 @@
 py_bandcamp is a Python scraper for Bandcamp. It fetches album, track, and
 artist metadata, stream URLs, lyrics, recommendations, and search results.
 
-It returns [`mediavocab`](https://github.com/OpenVoiceOS/mediavocab) `Release`
+It returns [`mediavocab`](https://github.com/TigreGotico/mediavocab) `Release`
 and `Entity` objects for typed, structured metadata.
 
 `mediavocab>=1.0.0` is a hard runtime dependency. Every search and
@@ -255,10 +255,9 @@ for entity in BandCamp.crawl(["https://neurosis.bandcamp.com"], max_artists=5, s
 
 ## Related projects
 
-- [mediavocab](https://github.com/OpenVoiceOS/mediavocab): the typed `Release` and `Entity` schema this library returns.
+- [mediavocab](https://github.com/TigreGotico/mediavocab): the typed `Release` and `Entity` schema this library returns.
 - [ovos-ocp-bandcamp-plugin](https://github.com/OpenVoiceOS/ovos-ocp-bandcamp-plugin): OCP media plugin built on py_bandcamp.
 - [ovos-skill-bandcamp](https://github.com/OpenVoiceOS/ovos-skill-bandcamp): OVOS voice skill built on py_bandcamp.
-- [bandcamp-ma-provider](https://github.com/TigreGotico/bandcamp-ma-provider): Music Assistant provider built on py_bandcamp.
 
 ## License
 

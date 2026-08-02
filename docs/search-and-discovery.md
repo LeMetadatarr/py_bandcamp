@@ -2,7 +2,7 @@
 
 ## Keyword search
 
-All search methods are on `BandCamp` (`py_bandcamp/__init__.py:430`). They
+All search methods are on `BandCamp` (`py_bandcamp/__init__.py:435`). They
 paginate automatically and deduplicate results by URL across pages.
 
 ```python
@@ -55,8 +55,8 @@ tags = BandCamp.tags()                 # flat list[str]
 tags_dict = BandCamp.tags(tag_list=False)  # {"genres": [...], "subgenres": {...}}
 ```
 
-`BandCamp.search_tag`: `py_bandcamp/__init__.py:399`
-`BandCamp.tags`: `py_bandcamp/__init__.py:386`
+`BandCamp.search_tag`: `py_bandcamp/__init__.py:404`
+`BandCamp.tags`: `py_bandcamp/__init__.py:391`
 
 ---
 
@@ -83,7 +83,7 @@ for a in album.related_artists:        # list[BandcampArtist]
     print(a.name, a.url)
 ```
 
-`BandCamp.get_recommendations`: `py_bandcamp/__init__.py:506`
+`BandCamp.get_recommendations`: `py_bandcamp/__init__.py:511`
 `BandcampAlbum.get_recommendations`: `py_bandcamp/models.py:438`
 
 Bandcamp populates the recommendations widget only for albums with enough
@@ -147,7 +147,7 @@ When `BandcampArtist.data["is_label"]` is `True`, `crawl()` calls
 each signed artist into the frontier, letting a single label seed expand
 into the full signed catalog.
 
-`BandCamp.crawl`: `py_bandcamp/__init__.py:586`
+`BandCamp.crawl`: `py_bandcamp/__init__.py:587`
 
 ---
 [← Model reference](models.md) · [Home](index.md) · [mediavocab converters →](converters.md)
