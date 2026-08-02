@@ -29,7 +29,7 @@ for a in release.work.tracklist:
     print(a.position, a.work.title, a.work.runtime)
 ```
 
-`BandCamp.album_to_release`: `py_bandcamp/__init__.py:487`
+`BandCamp.album_to_release`: `py_bandcamp/__init__.py:492`
 
 ## Fetch a track
 
@@ -42,7 +42,7 @@ release = BandCamp.track_to_release(
 print(release.work.title, release.codec, release.bitrate)
 ```
 
-`BandCamp.track_to_release`: `py_bandcamp/__init__.py:497`
+`BandCamp.track_to_release`: `py_bandcamp/__init__.py:503`
 
 ## Get a stream URL
 
@@ -55,7 +55,7 @@ url = BandCamp.get_stream_url(
 # https://t4.bcbits.com/stream/...  (time-limited token, ~1 hour)
 ```
 
-`BandCamp.get_stream_url`: `py_bandcamp/__init__.py:532`
+`BandCamp.get_stream_url`: `py_bandcamp/__init__.py:696`
 
 ## Browse by tag (no curl_cffi needed)
 

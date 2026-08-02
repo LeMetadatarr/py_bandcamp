@@ -2,7 +2,7 @@
 
 `BandCamp.album_to_release` and `BandCamp.track_to_release` convert raw
 Bandcamp scraper models into fully typed
-[`mediavocab`](https://github.com/OpenVoiceOS/mediavocab) objects.
+[`mediavocab`](https://github.com/TigreGotico/mediavocab) objects.
 
 All search helpers (`search_*`, `get_recommendations`) call the internal
 `_album_to_release` / `_track_to_release` functions automatically. You only
@@ -10,7 +10,7 @@ call the public converters directly when you already hold a raw model object.
 
 ---
 
-## `BandCamp.album_to_release`: `py_bandcamp/__init__.py:487`
+## `BandCamp.album_to_release`: `py_bandcamp/__init__.py:492`
 
 ```python
 from py_bandcamp import BandCamp
@@ -66,11 +66,11 @@ for a in release.work.tracklist:
     a.work.external_ids["bandcamp_track_url"]  # track URL (when known)
 ```
 
-`_album_to_release`: `py_bandcamp/__init__.py:208`
+`_album_to_release`: `py_bandcamp/__init__.py:209`
 
 ---
 
-## `BandCamp.track_to_release`: `py_bandcamp/__init__.py:497`
+## `BandCamp.track_to_release`: `py_bandcamp/__init__.py:503`
 
 ```python
 from py_bandcamp import BandCamp
@@ -101,25 +101,25 @@ release.external_ids["bandcamp_band_url"]
 release.external_ids["bandcamp_album_id"]   # only when track belongs to an album
 ```
 
-`_track_to_release`: `py_bandcamp/__init__.py:155`
+`_track_to_release`: `py_bandcamp/__init__.py:156`
 
 ---
 
-## Genre mapping: `py_bandcamp/__init__.py:29`
+## Genre mapping: `py_bandcamp/__init__.py:35`
 
 Bandcamp tags are normalised to `mediavocab.taxonomy.genre` `GENRE_*` tokens
 where a mapping exists. Tags without a mapping pass through verbatim so no
 information is lost. Common aliases (`hip-hop`, `r&b`, `dnb`, `edm`) are
 handled by `_GENRE_ALIASES`.
 
-## License inference: `py_bandcamp/__init__.py:73`
+## License inference: `py_bandcamp/__init__.py:74`
 
 `release.license` is populated only when Bandcamp keyword tags contain a
 recognisable Creative Commons marker (`cc-by`, `cc-by-sa`, `cc0`, etc.).
 No CC hint → empty string. Bandcamp does not assert All-Rights-Reserved
 in machine-readable form so the library does not guess it.
 
-## Label / publisher: `py_bandcamp/__init__.py:273`
+## Label / publisher: `py_bandcamp/__init__.py:274`
 
 `release.label` is set to an `EntityRef` for the ld+json `publisher` field
 when `publisher != artist`. Self-released albums (the common case) have
@@ -127,8 +127,8 @@ when `publisher != artist`. Self-released albums (the common case) have
 
 ## Entity converters
 
-`_artist_to_entity`: `py_bandcamp/__init__.py:289`
-`_label_to_entity`: `py_bandcamp/__init__.py:310`
+`_artist_to_entity`: `py_bandcamp/__init__.py:290`
+`_label_to_entity`: `py_bandcamp/__init__.py:314`
 
 Both are called automatically by `search_artists` / `search_labels` /
 `get_related_artists`. They populate `entity.extra` with `artist_url`,

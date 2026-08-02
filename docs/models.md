@@ -67,7 +67,7 @@ track = BandcampTrack.from_url("https://deadunicorn.bandcamp.com/track/astronaut
 
 ---
 
-## BandcampArtist: `models.py:590`
+## BandcampArtist: `models.py:629`
 
 ```python
 from py_bandcamp import BandcampArtist
@@ -93,10 +93,10 @@ artist = BandcampArtist.from_url("https://dopethrone.bandcamp.com")
 page. When converted to `mediavocab.Entity`, each social link surfaces as
 `entity.extra["social_<platform>"]` (e.g. `entity.extra["social_twitter"]`).
 
-`BandcampArtist.get_albums` (`models.py:685`) accepts `include_singles=True`
+`BandcampArtist.get_albums` (`models.py:749`) accepts `include_singles=True`
 to also return `BandcampSingle` objects for `/track/` hrefs.
 
-`BandcampArtist._scrap_band_id` (`models.py:599`) makes an extra GET to
+`BandcampArtist._scrap_band_id` (`models.py:638`) makes an extra GET to
 `<artist_url>/releases` to extract the numeric band id from `item_sellers` when
 it is not present in `data-band`.
 

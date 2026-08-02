@@ -56,7 +56,7 @@ for entity in BandCamp.crawl(["https://neurosis.bandcamp.com"], max_artists=10, 
 
 ---
 
-This file previously listed all public methods. See the split docs instead:
+For the full public method reference, see the split docs:
 
 - [Model reference](models.md)
 - [Search and discovery](search-and-discovery.md)
