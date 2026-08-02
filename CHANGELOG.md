@@ -1,68 +1,76 @@
 # Changelog
 
-## [0.12.0a3](https://github.com/TigreGotico/py_bandcamp/tree/0.12.0a3) (2026-07-30)
+## [0.12.0a4](https://github.com/LeMetadatarr/py_bandcamp/tree/0.12.0a4) (2026-08-02)
 
-[Full Changelog](https://github.com/TigreGotico/py_bandcamp/compare/0.12.0a2...0.12.0a3)
-
-**Merged pull requests:**
-
-- docs: rewrite README in Simplified Technical English [\#27](https://github.com/TigreGotico/py_bandcamp/pull/27) ([JarbasAl](https://github.com/JarbasAl))
-
-## [0.12.0a2](https://github.com/TigreGotico/py_bandcamp/tree/0.12.0a2) (2026-06-27)
-
-[Full Changelog](https://github.com/TigreGotico/py_bandcamp/compare/0.12.0a1...0.12.0a2)
+[Full Changelog](https://github.com/LeMetadatarr/py_bandcamp/compare/0.12.0a3...0.12.0a4)
 
 **Merged pull requests:**
 
-- docs: BandCamp.crawl\(\), BandcampLabel.scrap\(\), social links — docs, examples, tests [\#24](https://github.com/TigreGotico/py_bandcamp/pull/24) ([JarbasAl](https://github.com/JarbasAl))
+- docs: QA pass — accuracy, org-move URLs, related projects [\#29](https://github.com/LeMetadatarr/py_bandcamp/pull/29) ([JarbasAl](https://github.com/JarbasAl))
 
-## [0.12.0a1](https://github.com/TigreGotico/py_bandcamp/tree/0.12.0a1) (2026-06-26)
+## [0.12.0a3](https://github.com/LeMetadatarr/py_bandcamp/tree/0.12.0a3) (2026-07-30)
 
-[Full Changelog](https://github.com/TigreGotico/py_bandcamp/compare/0.11.0a2...0.12.0a1)
-
-**Merged pull requests:**
-
-- feat: BandcampLabel.scrap, social links on artist profiles, fix json import [\#22](https://github.com/TigreGotico/py_bandcamp/pull/22) ([JarbasAl](https://github.com/JarbasAl))
-
-## [0.11.0a2](https://github.com/TigreGotico/py_bandcamp/tree/0.11.0a2) (2026-06-23)
-
-[Full Changelog](https://github.com/TigreGotico/py_bandcamp/compare/0.11.0a1...0.11.0a2)
+[Full Changelog](https://github.com/LeMetadatarr/py_bandcamp/compare/0.12.0a2...0.12.0a3)
 
 **Merged pull requests:**
 
-- chore: migrate to mediavocab 1.0 [\#18](https://github.com/TigreGotico/py_bandcamp/pull/18) ([JarbasAl](https://github.com/JarbasAl))
+- docs: rewrite README in Simplified Technical English [\#27](https://github.com/LeMetadatarr/py_bandcamp/pull/27) ([JarbasAl](https://github.com/JarbasAl))
 
-## [0.11.0a1](https://github.com/TigreGotico/py_bandcamp/tree/0.11.0a1) (2026-05-07)
+## [0.12.0a2](https://github.com/LeMetadatarr/py_bandcamp/tree/0.12.0a2) (2026-06-27)
 
-[Full Changelog](https://github.com/TigreGotico/py_bandcamp/compare/0.10.0a1...0.11.0a1)
-
-**Merged pull requests:**
-
-- feat: emit mediavocab Release / Entity from py\_bandcamp [\#14](https://github.com/TigreGotico/py_bandcamp/pull/14) ([JarbasAl](https://github.com/JarbasAl))
-
-## [0.10.0a1](https://github.com/TigreGotico/py_bandcamp/tree/0.10.0a1) (2026-04-30)
-
-[Full Changelog](https://github.com/TigreGotico/py_bandcamp/compare/0.9.0a1...0.10.0a1)
+[Full Changelog](https://github.com/LeMetadatarr/py_bandcamp/compare/0.12.0a1...0.12.0a2)
 
 **Merged pull requests:**
 
-- feat: surface BandcampArtist.band\_id \(+ item\_id alias\) [\#12](https://github.com/TigreGotico/py_bandcamp/pull/12) ([JarbasAl](https://github.com/JarbasAl))
+- docs: BandCamp.crawl\(\), BandcampLabel.scrap\(\), social links — docs, examples, tests [\#24](https://github.com/LeMetadatarr/py_bandcamp/pull/24) ([JarbasAl](https://github.com/JarbasAl))
 
-## [0.9.0a1](https://github.com/TigreGotico/py_bandcamp/tree/0.9.0a1) (2026-04-30)
+## [0.12.0a1](https://github.com/LeMetadatarr/py_bandcamp/tree/0.12.0a1) (2026-06-26)
 
-[Full Changelog](https://github.com/TigreGotico/py_bandcamp/compare/0.8.0a1...0.9.0a1)
-
-**Merged pull requests:**
-
-- feat: surface canonical numeric IDs from data-tralbum [\#10](https://github.com/TigreGotico/py_bandcamp/pull/10) ([JarbasAl](https://github.com/JarbasAl))
-
-## [0.8.0a1](https://github.com/TigreGotico/py_bandcamp/tree/0.8.0a1) (2026-04-28)
-
-[Full Changelog](https://github.com/TigreGotico/py_bandcamp/compare/0.7.1...0.8.0a1)
+[Full Changelog](https://github.com/LeMetadatarr/py_bandcamp/compare/0.11.0a2...0.12.0a1)
 
 **Merged pull requests:**
 
-- feat: BandcampSingle model and release-type-aware get\_albums [\#8](https://github.com/TigreGotico/py_bandcamp/pull/8) ([JarbasAl](https://github.com/JarbasAl))
+- feat: BandcampLabel.scrap, social links on artist profiles, fix json import [\#22](https://github.com/LeMetadatarr/py_bandcamp/pull/22) ([JarbasAl](https://github.com/JarbasAl))
+
+## [0.11.0a2](https://github.com/LeMetadatarr/py_bandcamp/tree/0.11.0a2) (2026-06-23)
+
+[Full Changelog](https://github.com/LeMetadatarr/py_bandcamp/compare/0.11.0a1...0.11.0a2)
+
+**Merged pull requests:**
+
+- chore: migrate to mediavocab 1.0 [\#18](https://github.com/LeMetadatarr/py_bandcamp/pull/18) ([JarbasAl](https://github.com/JarbasAl))
+
+## [0.11.0a1](https://github.com/LeMetadatarr/py_bandcamp/tree/0.11.0a1) (2026-05-07)
+
+[Full Changelog](https://github.com/LeMetadatarr/py_bandcamp/compare/0.10.0a1...0.11.0a1)
+
+**Merged pull requests:**
+
+- feat: emit mediavocab Release / Entity from py\_bandcamp [\#14](https://github.com/LeMetadatarr/py_bandcamp/pull/14) ([JarbasAl](https://github.com/JarbasAl))
+
+## [0.10.0a1](https://github.com/LeMetadatarr/py_bandcamp/tree/0.10.0a1) (2026-04-30)
+
+[Full Changelog](https://github.com/LeMetadatarr/py_bandcamp/compare/0.9.0a1...0.10.0a1)
+
+**Merged pull requests:**
+
+- feat: surface BandcampArtist.band\_id \(+ item\_id alias\) [\#12](https://github.com/LeMetadatarr/py_bandcamp/pull/12) ([JarbasAl](https://github.com/JarbasAl))
+
+## [0.9.0a1](https://github.com/LeMetadatarr/py_bandcamp/tree/0.9.0a1) (2026-04-30)
+
+[Full Changelog](https://github.com/LeMetadatarr/py_bandcamp/compare/0.8.0a1...0.9.0a1)
+
+**Merged pull requests:**
+
+- feat: surface canonical numeric IDs from data-tralbum [\#10](https://github.com/LeMetadatarr/py_bandcamp/pull/10) ([JarbasAl](https://github.com/JarbasAl))
+
+## [0.8.0a1](https://github.com/LeMetadatarr/py_bandcamp/tree/0.8.0a1) (2026-04-28)
+
+[Full Changelog](https://github.com/LeMetadatarr/py_bandcamp/compare/0.7.1...0.8.0a1)
+
+**Merged pull requests:**
+
+- feat: BandcampSingle model and release-type-aware get\_albums [\#8](https://github.com/LeMetadatarr/py_bandcamp/pull/8) ([JarbasAl](https://github.com/JarbasAl))
 
 
 
