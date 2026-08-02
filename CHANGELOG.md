@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.12.0a5](https://github.com/LeMetadatarr/py_bandcamp/tree/0.12.0a5) (2026-08-02)
+
+[Full Changelog](https://github.com/LeMetadatarr/py_bandcamp/compare/0.12.0a4...0.12.0a5)
+
+**Merged pull requests:**
+
+- fix: pin mediavocab\>=2.0.0a0 \(2.x prerelease has the API py\_bandcamp targets\) [\#30](https://github.com/LeMetadatarr/py_bandcamp/pull/30) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.12.0a4](https://github.com/LeMetadatarr/py_bandcamp/tree/0.12.0a4) (2026-08-02)
 
 [Full Changelog](https://github.com/LeMetadatarr/py_bandcamp/compare/0.12.0a3...0.12.0a4)
