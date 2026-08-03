@@ -61,7 +61,7 @@ if release is not None:
     print(f"  media_type    = {release.work.media_type}")
     print(f"  artist        = {artist}")
     print(f"  release_date  = {release.release_date}")
-    print(f"  license       = {release.license!r}  (open? {release.license.is_open() if release.license else False})")
+    print(f"  license       = {release.license!r}  (open? {release.license_model.is_open() if release.license_model else False})")
     print(f"  album_url     = {release.external_ids.get('bandcamp_album_url')}")
     print(f"  band_id       = {release.external_ids.get('bandcamp_band_id')}")
 else:
