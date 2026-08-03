@@ -97,23 +97,49 @@ def test_crawl_expands_related():
                                   "album_name": "Below The Lights"}, scrap=False)
             related = MagicMock()
             related.url = related_url
+            related.name = "imonolith"
             alb._related_artists_cache = [related]
-
-            def related_artists_prop():
-                return [related]
-
-            type(alb).related_artists = property(lambda self: [related])
             m.albums = [alb]
         else:
             m.albums = []
         return m
 
-    with patch("py_bandcamp.BandcampArtist", side_effect=make_instance):
+    # ``related_artists`` is a property on the *class*, so it can only be
+    # stubbed there. Do it via a scoped ``patch.object`` (auto-restoring)
+    # instead of a raw assignment — a bare ``type(alb).related_artists = ...``
+    # leaks the stub onto every ``BandcampAlbum`` instance for the rest of
+    # the test session, causing order-dependent failures elsewhere.
+    from py_bandcamp.models import BandcampAlbum as _BandcampAlbum
+    with patch("py_bandcamp.BandcampArtist", side_effect=make_instance), \
+         patch.object(_BandcampAlbum, "related_artists",
+                       new=property(lambda self: list(getattr(self, "_related_artists_cache", [])))):
         results = list(BandCamp.crawl(["https://enslaved.bandcamp.com"], max_artists=2))
 
     visited_names = [e.name for e in results]
     assert "enslaved" in visited_names
     assert "imonolith" in visited_names
+
+
+def test_crawl_expands_related_does_not_leak_class_stub():
+    """Regression test for a test-order flake: stubbing ``related_artists``
+    on the ``BandcampAlbum`` class (needed because it's a property, so it
+    can't be set on an instance) must not survive past the ``with`` block.
+    A prior version used a bare ``type(alb).related_artists = property(...)``
+    assignment with no teardown, which permanently replaced the property for
+    every ``BandcampAlbum`` for the rest of the test session — any later
+    test touching ``.related_artists`` on an unrelated album got back a
+    leaked ``MagicMock`` instead of its own data, failing only when tests
+    ran in an order that put such a test after this one (e.g. under
+    ``pytest-randomly``).
+    """
+    from py_bandcamp.models import BandcampAlbum
+
+    original_property = BandcampAlbum.related_artists
+    test_crawl_expands_related()
+    assert BandcampAlbum.related_artists is original_property
+
+    album = BandcampAlbum({"url": "https://someoneelse.bandcamp.com/album/x"}, scrap=False)
+    assert album.related_artists == []
 
 
 def test_crawl_label_expands_roster():
