@@ -178,7 +178,8 @@ def test_track_to_release_full():
     assert rel.codec == "mp3"
     assert rel.bitrate == "128"
     assert rel.audio_channels == "stereo"
-    assert rel.license.identifier == "CC-BY-4.0"
+    assert rel.license == "CC-BY-4.0"
+    assert rel.license_model.identifier == "CC-BY-4.0"
     assert rel.release_date == "2020-03-27"
     assert rel.external_ids["bandcamp_track_id"] == "1"
     assert rel.external_ids["bandcamp_band_id"] == "2"
@@ -217,7 +218,8 @@ def test_album_to_release_with_label_and_tracklist():
     assert rel.label.name == "Cool Label"
     assert len(rel.work.tracklist) == 1
     assert rel.work.tracklist[0].position == 1
-    assert rel.license.identifier == "CC-BY-4.0"
+    assert rel.license == "CC-BY-4.0"
+    assert rel.license_model.identifier == "CC-BY-4.0"
 
 
 def test_album_to_release_publisher_equals_artist_drops_label():
