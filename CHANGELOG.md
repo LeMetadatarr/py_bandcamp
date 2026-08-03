@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.12.0a6](https://github.com/LeMetadatarr/py_bandcamp/tree/0.12.0a6) (2026-08-03)
+
+[Full Changelog](https://github.com/LeMetadatarr/py_bandcamp/compare/0.12.0a5...0.12.0a6)
+
+**Merged pull requests:**
+
+- ci: grant conventional-label workflow write permissions [\#31](https://github.com/LeMetadatarr/py_bandcamp/pull/31) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.12.0a5](https://github.com/LeMetadatarr/py_bandcamp/tree/0.12.0a5) (2026-08-02)
 
 [Full Changelog](https://github.com/LeMetadatarr/py_bandcamp/compare/0.12.0a4...0.12.0a5)
