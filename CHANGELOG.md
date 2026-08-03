@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.12.1a2](https://github.com/LeMetadatarr/py_bandcamp/tree/0.12.1a2) (2026-08-03)
+
+[Full Changelog](https://github.com/LeMetadatarr/py_bandcamp/compare/0.12.1a1...0.12.1a2)
+
+**Merged pull requests:**
+
+- deep: bugs, real-fixture tests, docs/examples [\#33](https://github.com/LeMetadatarr/py_bandcamp/pull/33) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.12.1a1](https://github.com/LeMetadatarr/py_bandcamp/tree/0.12.1a1) (2026-08-03)
 
 [Full Changelog](https://github.com/LeMetadatarr/py_bandcamp/compare/0.12.0a6...0.12.1a1)
