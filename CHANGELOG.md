@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.13.0a1](https://github.com/LeMetadatarr/py_bandcamp/tree/0.13.0a1) (2026-08-14)
+
+[Full Changelog](https://github.com/LeMetadatarr/py_bandcamp/compare/0.12.1a2...0.13.0a1)
+
+**Merged pull requests:**
+
+- feat: JSONL dataset dumper [\#34](https://github.com/LeMetadatarr/py_bandcamp/pull/34) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.12.1a2](https://github.com/LeMetadatarr/py_bandcamp/tree/0.12.1a2) (2026-08-03)
 
 [Full Changelog](https://github.com/LeMetadatarr/py_bandcamp/compare/0.12.1a1...0.12.1a2)
