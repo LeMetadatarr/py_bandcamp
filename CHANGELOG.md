@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.13.1a1](https://github.com/LeMetadatarr/py_bandcamp/tree/0.13.1a1) (2026-09-01)
+
+[Full Changelog](https://github.com/LeMetadatarr/py_bandcamp/compare/0.13.0a1...0.13.1a1)
+
+**Merged pull requests:**
+
+- fix: follow the mediavocab 2.x license model [\#35](https://github.com/LeMetadatarr/py_bandcamp/pull/35) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.13.0a1](https://github.com/LeMetadatarr/py_bandcamp/tree/0.13.0a1) (2026-08-14)
 
 [Full Changelog](https://github.com/LeMetadatarr/py_bandcamp/compare/0.12.1a2...0.13.0a1)
