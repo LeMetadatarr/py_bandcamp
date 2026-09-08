@@ -54,7 +54,20 @@ def default_session():
 
     Returns a session-shaped object exposing ``get``/``post``/etc.
     """
-    if os.environ.get("PYBANDCAMP_TRANSPORT", "").strip().lower() == "curl_cffi":
+    transport = os.environ.get("PYBANDCAMP_TRANSPORT", "").strip().lower()
+    if not transport:
+        # No explicit transport requested → prefer unblock_requests'
+        # CloudflareSession (curl_cffi impersonation + Wayback fallback) as a
+        # drop-in session when available; fall through otherwise.
+        try:
+            from unblock_requests import CloudflareSession
+
+            s = CloudflareSession(env_prefix="PYBANDCAMP", wayback_fallback=True)
+            s.headers["User-Agent"] = _DEFAULT_UA
+            return s
+        except Exception:
+            pass
+    if transport == "curl_cffi":
         try:
             return _make_curl_cffi_session()
         except ImportError:
