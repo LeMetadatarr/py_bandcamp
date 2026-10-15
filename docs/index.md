@@ -29,3 +29,4 @@ stream URL extraction, recommendations, tag browse, and free-text search.
 - [Search and discovery](search-and-discovery.md)
 - [mediavocab converters](converters.md)
 - [Transport / curl_cffi](transport.md)
+- [Use from an arrkit app](arrkit.md)

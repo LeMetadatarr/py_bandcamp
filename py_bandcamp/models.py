@@ -386,8 +386,11 @@ class BandcampAlbum:
 
     @staticmethod
     def get_tracks(url):
-        resp = requests.get(url)
-        text = resp.text
+        return BandcampAlbum.tracks_from_page(requests.get(url).text, url)
+
+    @staticmethod
+    def tracks_from_page(text, url):
+        """The tracks of an album page already fetched (see :meth:`get_tracks`)."""
         data = _parse_ldjson(text, clean=True)
         if not data.get("track"):
             return []
@@ -480,8 +483,11 @@ class BandcampAlbum:
 
     @staticmethod
     def get_album_data(url):
-        resp = requests.get(url)
-        text = resp.text
+        return BandcampAlbum.data_from_page(requests.get(url).text, url)
+
+    @staticmethod
+    def data_from_page(text, url):
+        """The data of an album page already fetched (see :meth:`get_album_data`)."""
         data = _parse_ldjson(text, clean=True)
         props = get_props(data)
         kwords = data.get('keywords', "")
@@ -747,9 +753,14 @@ class BandcampArtist:
 
     @staticmethod
     def get_albums(url, scrap=False, include_singles=False):
+        return BandcampArtist.albums_from_page(requests.get(url).text, url, scrap, include_singles)
+
+    @staticmethod
+    def albums_from_page(text, url, scrap=False, include_singles=False):
+        """The albums (and singles) of an artist page already fetched (see :meth:`get_albums`)."""
         albums = []
         singles = []
-        soup = BeautifulSoup(requests.get(url).text, "html.parser")
+        soup = BeautifulSoup(text, "html.parser")
         for item in soup.find_all("a"):
             title_tag = item.find("p", {"class": "title"})
             if not title_tag:

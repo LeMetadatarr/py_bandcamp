@@ -14,6 +14,14 @@ dependencies = ["beautifulsoup4", "requests", "mediavocab>=2.0.0a2"]
 [project.optional-dependencies]
 test = ["pytest", "vcrpy", "pytest-vcr"]
 stealth = ["curl-cffi"]
+arr = ["arrkit>=0.1.0a9"]
+test-arr = ["arrkit>=0.1.0a9", "pytest", "pyyaml"]
+
+[project.entry-points."arrkit.indexers"]
+bandcamp = "py_bandcamp.arr:Bandcamp"
+
+[project.entry-points."arrkit.clients"]
+bandcamp = "py_bandcamp.arr:BandcampClient"
 
 [project.urls]
 Homepage = "https://github.com/LeMetadatarr/py_bandcamp"
