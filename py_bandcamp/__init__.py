@@ -450,22 +450,10 @@ class BandCamp:
         if item_type:
             params["item_type"] = item_type
         response = _http(_session).get('http://bandcamp.com/search', params=params)
-        soup = BeautifulSoup(response.content, 'html.parser')
 
         page_results = []
-        for item in soup.find_all("li", class_="searchresult"):
-            item_type_text = item.find('div', class_='itemtype').text.strip().lower()
-            if item_type_text == "album" and albums:
-                data = cls._parse_album(item)
-            elif item_type_text == "track" and tracks:
-                data = cls._parse_track(item)
-            elif item_type_text == "artist" and artists:
-                data = cls._parse_artist(item)
-            elif item_type_text == "label" and labels:
-                data = cls._parse_label(item)
-            else:
-                continue
-            if data is None or str(data) in _seen:
+        for data in cls.parse_search_page(response.content, albums, tracks, artists, labels):
+            if str(data) in _seen:
                 continue
             _seen.add(str(data))
             page_results.append(data)
@@ -487,6 +475,28 @@ class BandCamp:
             cls, _session, name, albums=albums, tracks=tracks,
             artists=artists, labels=labels, max_pages=max_pages,
             _page=_page + 1, _seen=_seen)
+
+    @classmethod
+    def parse_search_page(cls, content, albums=True, tracks=True, artists=True, labels=False):
+        """The results of a search page already fetched, as BandcampAlbum, BandcampTrack, BandcampArtist and BandcampLabel objects
+        (only the kinds asked for), in page order."""
+        soup = BeautifulSoup(content, 'html.parser')
+        out = []
+        for item in soup.find_all("li", class_="searchresult"):
+            item_type_text = item.find('div', class_='itemtype').text.strip().lower()
+            if item_type_text == "album" and albums:
+                data = cls._parse_album(item)
+            elif item_type_text == "track" and tracks:
+                data = cls._parse_track(item)
+            elif item_type_text == "artist" and artists:
+                data = cls._parse_artist(item)
+            elif item_type_text == "label" and labels:
+                data = cls._parse_label(item)
+            else:
+                continue
+            if data is not None:
+                out.append(data)
+        return out
 
     @staticmethod
     def album_to_release(album_or_url, include_tracklist: bool = True) -> Release:

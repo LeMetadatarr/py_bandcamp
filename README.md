@@ -247,6 +247,11 @@ for entity in BandCamp.crawl(["https://neurosis.bandcamp.com"], max_artists=5, s
 - [Search and discovery](docs/search-and-discovery.md)
 - [mediavocab converters](docs/converters.md)
 - [Transport / curl_cffi](docs/transport.md)
+- [Use from an arrkit app](docs/arrkit.md)
+
+## Use from an arrkit app
+
+Installed with the `arr` extra, py_bandcamp is an indexer and a download client named `bandcamp` for apps built on arrkit. See [docs/arrkit.md](docs/arrkit.md).
 
 ## Notes
 
