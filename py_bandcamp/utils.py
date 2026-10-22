@@ -1,7 +1,7 @@
 import json
 import re
 
-from py_bandcamp.session import SESSION as requests
+from py_bandcamp.session import HTTP as requests
 
 
 def _parse_iso_duration(iso):
@@ -18,14 +18,23 @@ def _parse_iso_duration(iso):
     return 0
 
 
-def extract_blob(url, params=None):
-    blob = requests.get(url, params=params).text
-    for b in blob.split("data-blob='")[1:]:
+def _extract_blob_from_text(text):
+    """Pull and decode the ``data-blob`` JSON from an already-fetched HTML
+    string. Returns ``None`` when the blob is absent. Same parsing rules as
+    :func:`extract_blob`, exposed separately so callers that already have
+    the HTML body don't pay for a second HTTP fetch."""
+    for b in text.split("data-blob='")[1:]:
         json_blob = b.split("'")[0]
         return json.loads(json_blob)
-    for b in blob.split("data-blob=\"")[1:]:
+    for b in text.split("data-blob=\"")[1:]:
         json_blob = b.split("\"")[0].replace("&quot;", '"')
         return json.loads(json_blob)
+    return None
+
+
+def extract_blob(url, params=None):
+    blob = requests.get(url, params=params).text
+    return _extract_blob_from_text(blob)
 
 
 def _extract_tralbum(text):
@@ -40,13 +49,11 @@ def _extract_tralbum(text):
         return {}
 
 
-def extract_ldjson_blob(url, clean=False):
-    txt_string = requests.get(url).text
-
-    json_blob = txt_string. \
-        split('<script type="application/ld+json">')[-1]. \
-        split("</script>")[0]
-
+def _parse_ldjson(text, clean=False):
+    """Parse ld+json from an already-fetched HTML string."""
+    json_blob = text \
+        .split('<script type="application/ld+json">')[-1] \
+        .split("</script>")[0]
     data = json.loads(json_blob)
 
     def _clean_list(l):
@@ -71,6 +78,10 @@ def extract_ldjson_blob(url, clean=False):
     if clean:
         return _clean_dict(data)
     return data
+
+
+def extract_ldjson_blob(url, clean=False):
+    return _parse_ldjson(requests.get(url).text, clean=clean)
 
 
 def get_props(d, props=None):
