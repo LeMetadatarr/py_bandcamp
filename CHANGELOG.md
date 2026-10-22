@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.14.0a1](https://github.com/LeMetadatarr/py_bandcamp/tree/0.14.0a1) (2026-10-22)
+
+[Full Changelog](https://github.com/LeMetadatarr/py_bandcamp/compare/0.13.1a1...0.14.0a1)
+
+**Merged pull requests:**
+
+- feat: register as an arrkit indexer and download client [\#36](https://github.com/LeMetadatarr/py_bandcamp/pull/36) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.13.1a1](https://github.com/LeMetadatarr/py_bandcamp/tree/0.13.1a1) (2026-09-01)
 
 [Full Changelog](https://github.com/LeMetadatarr/py_bandcamp/compare/0.13.0a1...0.13.1a1)
