@@ -24,8 +24,8 @@ python your_script.py
 ```
 
 If `curl_cffi` is not installed the env var is silently ignored and the
-plain `requests` session is used. Nothing hard-breaks, but search results
-may be empty or contain challenge HTML.
+plain `requests` session is used. Nothing hard-breaks, but a challenged
+search raises `BandcampBlocked`.
 
 The env var is read on each call to `default_session()`, so tests can flip it
 at runtime without restarting the process.
@@ -65,12 +65,23 @@ Per-instance sessions leave the global `SESSION` untouched. The `_hybridmethod`
 descriptor on `BandCamp` routes `BandCamp.method()` (class-style) through the
 global proxy and `bc.method()` (instance-style) through `bc._session`.
 
+## Timeouts and refusals
+
+Every request carries a 30-second timeout (`py_bandcamp.session.DEFAULT_TIMEOUT`) unless the
+caller passes its own, on the global session and on a per-instance one alike. This holds for
+`get`, `post`, `head`, `put`, `patch`, `delete`, `options` and `request`. A session that
+carries its own numeric `timeout` attribute, as a `curl_cffi` session built with one does, keeps it. A search that
+Bandcamp answers with 403, 429 or 503, or with the "Client Challenge" page, raises
+`py_bandcamp.BandcampBlocked` instead of returning an empty result. A block that arrives on
+the second or a later results page ends the iteration with a logged warning, because
+the pages already yielded are kept and a raise would discard them for callers that build a list.
+
 ## What the bot challenge affects
 
 | Operation | Affected by Fastly? |
 |---|---|
 | `BandCamp.search(...)` | Yes, keyword search hits `/search` |
-| `BandCamp.search_tag(...)` | No, browses tag pages, not `/search` |
+| `BandCamp.search_tag(...)`, `BandCamp.browse_tag(...)` | Yes, both query `/search` |
 | `BandCamp.album_to_release(url)` | No, fetches album page directly |
 | `BandCamp.track_to_release(url)` | No, fetches track page directly |
 | `BandCamp.get_stream_url(url)` | No, parses `data-tralbum` from track page |

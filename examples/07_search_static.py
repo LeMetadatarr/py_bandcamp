@@ -1,8 +1,8 @@
-"""07_search_static — tag and genre browse (no curl_cffi required).
+"""07_search_static — tag and genre browse.
 
 Bandcamp's /search endpoint is blocked by a Fastly JS challenge for vanilla
-requests traffic. Tag browse, album/track page fetches, and recommendations
-are NOT affected. This example uses only those unblocked paths.
+requests traffic, and tag search uses it. Where that happens the search
+raises BandcampBlocked; set PYBANDCAMP_TRANSPORT=curl_cffi (see 09_custom_session.py).
 
 For keyword search with curl_cffi, see 09_custom_session.py.
 """

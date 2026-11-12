@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 from datetime import datetime
 
@@ -13,7 +14,7 @@ from mediavocab import (
 from mediavocab.taxonomy import genre as _genre_tax
 
 from py_bandcamp.models import BandcampTrack, BandcampAlbum, BandcampArtist, BandcampLabel
-from py_bandcamp.session import HTTP as requests, set_session as set_session, get_session as get_session
+from py_bandcamp.session import HTTP as requests, TimedHTTP, set_session as set_session, get_session as get_session
 from py_bandcamp.utils import (
     extract_ldjson_blob as extract_ldjson_blob,
     get_props as get_props,
@@ -366,7 +367,28 @@ def _http(session):
     ``None`` we return the module-level :data:`requests` proxy so test
     patches against ``py_bandcamp.requests`` keep intercepting traffic.
     """
-    return session if session is not None else requests
+    if session is None:
+        return requests
+    return session if isinstance(session, TimedHTTP) else TimedHTTP(session)
+
+
+LOG = logging.getLogger(__name__)
+
+
+class BandcampBlocked(RuntimeError):
+    """Bandcamp answered a search with a refusal or a bot challenge instead of results."""
+
+
+_CHALLENGE = re.compile(rb"<title\s*>\s*client\s+challenge\s*</title\s*>", re.IGNORECASE)
+
+
+def _check_not_blocked(response):
+    """Raise :class:`BandcampBlocked` for a refusal status or the "Client Challenge" page."""
+    if response.status_code in (403, 429, 503):
+        raise BandcampBlocked(f"Bandcamp refused the request (HTTP {response.status_code})")
+    content = response.content
+    if _CHALLENGE.search(content[:8192]) and b"searchresult" not in content:
+        raise BandcampBlocked("Bandcamp served a bot challenge; see docs/transport.md for the curl_cffi transport")
 
 
 class BandCamp:
@@ -452,6 +474,13 @@ class BandCamp:
         response = _http(_session).get('http://bandcamp.com/search', params=params)
 
         page_results = []
+        try:
+            _check_not_blocked(response)
+        except BandcampBlocked as e:
+            if _page == 1:
+                raise
+            LOG.warning("search for %r stopped at page %d: %s", name, _page, e)
+            return
         for data in cls.parse_search_page(response.content, albums, tracks, artists, labels):
             if str(data) in _seen:
                 continue
