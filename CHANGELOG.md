@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.14.3a1](https://github.com/LeMetadatarr/py_bandcamp/tree/0.14.3a1) (2026-11-12)
+
+[Full Changelog](https://github.com/LeMetadatarr/py_bandcamp/compare/0.14.2a1...0.14.3a1)
+
+**Merged pull requests:**
+
+- fix: time out requests and raise on a blocked search [\#39](https://github.com/LeMetadatarr/py_bandcamp/pull/39) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.14.2a1](https://github.com/LeMetadatarr/py_bandcamp/tree/0.14.2a1) (2026-11-12)
 
 [Full Changelog](https://github.com/LeMetadatarr/py_bandcamp/compare/0.14.1a2...0.14.2a1)
