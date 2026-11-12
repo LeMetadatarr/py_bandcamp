@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.14.1a1](https://github.com/LeMetadatarr/py_bandcamp/tree/0.14.1a1) (2026-11-12)
+
+[Full Changelog](https://github.com/LeMetadatarr/py_bandcamp/compare/0.14.0a1...0.14.1a1)
+
+**Merged pull requests:**
+
+- fix: correct the declared Python and mediavocab floors [\#40](https://github.com/LeMetadatarr/py_bandcamp/pull/40) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.14.0a1](https://github.com/LeMetadatarr/py_bandcamp/tree/0.14.0a1) (2026-10-22)
 
 [Full Changelog](https://github.com/LeMetadatarr/py_bandcamp/compare/0.13.1a1...0.14.0a1)
