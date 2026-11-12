@@ -228,3 +228,51 @@ def test_get_stream_url_fallback_to_input_url():
         mock_gsd.return_value = {"title": "T"}  # no "stream" key
         url = BandCamp.get_stream_url("https://a.bandcamp.com/track/t")
     assert url == "https://a.bandcamp.com/track/t"
+
+
+def test_iso_duration_accepts_every_designator_combination():
+    from py_bandcamp.utils import _parse_iso_duration
+    assert _parse_iso_duration("P00H11M17S") == 677
+    assert _parse_iso_duration("PT1H5M") == 3900
+    assert _parse_iso_duration("PT45S") == 45
+    assert _parse_iso_duration("PT3M") == 180
+    assert _parse_iso_duration("PT3M20.5S") == 200
+    assert _parse_iso_duration("garbage") == 0
+    assert _parse_iso_duration("P1DT1H") == 90000
+    assert _parse_iso_duration("PT3Mjunk") == 0
+
+
+def test_page_attributes_are_fully_entity_decoded():
+    from py_bandcamp.utils import _extract_blob_from_text, _extract_tralbum
+    assert _extract_tralbum('data-tralbum="{&quot;a&quot;:&quot;&#x27;q&#x27; &lt;b&gt;&quot;}"') == {"a": "'q' <b>"}
+    assert _extract_blob_from_text('data-blob="{&quot;a&quot;:&quot;x&#39;y&quot;}"') == {"a": "x'y"}
+
+
+def test_search_result_without_an_itemtype_is_skipped():
+    from py_bandcamp import BandCamp
+    typeless = '<li class="searchresult"><div class="other"></div></li>'
+    album = ('<li class="searchresult"><div class="itemtype">ALBUM</div><div class="heading">'
+             '<a href="https://a.bandcamp.com/album/x?from=s">X</a></div><div class="subhead">by B</div></li>')
+    assert BandCamp.parse_search_page(typeless) == []
+    found = BandCamp.parse_search_page(typeless + album + typeless)
+    assert [a.url for a in found] == ["https://a.bandcamp.com/album/x"]
+
+
+def test_iso_duration_never_raises_on_huge_digit_runs():
+    from py_bandcamp.utils import _parse_iso_duration
+    for n in (400, 5000):
+        digits = "9" * n
+        for iso in (f"PT{digits}S", f"PT{digits}M", f"P{digits}D", f"PT{digits}.5S"):
+            assert _parse_iso_duration(iso) == 0
+
+
+def test_single_quoted_blob_is_decoded_exactly_once():
+    from py_bandcamp.utils import _extract_blob_from_text
+    assert _extract_blob_from_text("""data-blob='{"a":"x&amp;y &#39;z&#39;"}'""") == {"a": "x&y 'z'"}
+    assert _extract_blob_from_text("""data-blob='{"a":"&amp;lt;"}'""") == {"a": "&lt;"}
+
+
+def test_double_encoded_entities_stay_literal_text():
+    from py_bandcamp.utils import _extract_blob_from_text, _extract_tralbum
+    assert _extract_blob_from_text('data-blob="{&quot;a&quot;:&quot;&amp;lt;&quot;}"') == {"a": "&lt;"}
+    assert _extract_tralbum('data-tralbum="{&quot;a&quot;:&quot;&amp;lt;&quot;}"') == {"a": "&lt;"}
