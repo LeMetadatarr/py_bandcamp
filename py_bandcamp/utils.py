@@ -1,3 +1,4 @@
+import html
 import json
 import re
 
@@ -5,17 +6,17 @@ from py_bandcamp.session import HTTP as requests
 
 
 def _parse_iso_duration(iso):
-    """Parse ISO 8601 duration string (e.g. 'P00H11M17S') to total seconds."""
+    """Parse an ISO 8601 duration such as 'P00H11M17S' or 'PT1H5M' to total seconds."""
     if not iso:
         return 0
-    m3 = re.search(r'(\d+)H(\d+)M(\d+)S', iso)
-    if m3:
-        h, mn, s = int(m3.group(1)), int(m3.group(2)), int(m3.group(3))
-        return h * 3600 + mn * 60 + s
-    m2 = re.search(r'(\d+)M(\d+)S', iso)
-    if m2:
-        return int(m2.group(1)) * 60 + int(m2.group(2))
-    return 0
+    m = re.fullmatch(r'P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?', iso.strip())
+    if not m:
+        return 0
+    d, h, mn, s = m.groups()
+    try:
+        return int(int(d or 0) * 86400 + int(h or 0) * 3600 + int(mn or 0) * 60 + float(s or 0))
+    except (OverflowError, ValueError):
+        return 0
 
 
 def _extract_blob_from_text(text):
@@ -24,10 +25,10 @@ def _extract_blob_from_text(text):
     :func:`extract_blob`, exposed separately so callers that already have
     the HTML body don't pay for a second HTTP fetch."""
     for b in text.split("data-blob='")[1:]:
-        json_blob = b.split("'")[0]
+        json_blob = html.unescape(b.split("'")[0])
         return json.loads(json_blob)
     for b in text.split("data-blob=\"")[1:]:
-        json_blob = b.split("\"")[0].replace("&quot;", '"')
+        json_blob = html.unescape(b.split("\"")[0])
         return json.loads(json_blob)
     return None
 
@@ -43,8 +44,7 @@ def _extract_tralbum(text):
         return {}
     try:
         raw = text.split('data-tralbum="')[1].split('"')[0]
-        raw = raw.replace("&quot;", '"').replace("&#39;", "'").replace("&amp;", "&")
-        return json.loads(raw)
+        return json.loads(html.unescape(raw))
     except Exception:
         return {}
 
