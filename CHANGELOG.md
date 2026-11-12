@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.14.1a2](https://github.com/LeMetadatarr/py_bandcamp/tree/0.14.1a2) (2026-11-12)
+
+[Full Changelog](https://github.com/LeMetadatarr/py_bandcamp/compare/0.14.1a1...0.14.1a2)
+
+**Merged pull requests:**
+
+- test: keep the crawl class-stub test off the network [\#41](https://github.com/LeMetadatarr/py_bandcamp/pull/41) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.14.1a1](https://github.com/LeMetadatarr/py_bandcamp/tree/0.14.1a1) (2026-11-12)
 
 [Full Changelog](https://github.com/LeMetadatarr/py_bandcamp/compare/0.14.0a1...0.14.1a1)
