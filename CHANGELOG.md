@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.14.2a1](https://github.com/LeMetadatarr/py_bandcamp/tree/0.14.2a1) (2026-11-12)
+
+[Full Changelog](https://github.com/LeMetadatarr/py_bandcamp/compare/0.14.1a2...0.14.2a1)
+
+**Merged pull requests:**
+
+- fix: decode page attributes fully, read every ISO duration, skip typeless rows [\#38](https://github.com/LeMetadatarr/py_bandcamp/pull/38) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.14.1a2](https://github.com/LeMetadatarr/py_bandcamp/tree/0.14.1a2) (2026-11-12)
 
 [Full Changelog](https://github.com/LeMetadatarr/py_bandcamp/compare/0.14.1a1...0.14.1a2)
