@@ -139,7 +139,11 @@ def test_crawl_expands_related_does_not_leak_class_stub():
     assert BandcampAlbum.related_artists is original_property
 
     album = BandcampAlbum({"url": "https://someoneelse.bandcamp.com/album/x"}, scrap=False)
-    assert album.related_artists == []
+    with patch("py_bandcamp.models.requests") as http:
+        http.get.return_value.ok = True
+        http.get.return_value.text = "<html></html>"
+        assert album.related_artists == []
+    http.get.assert_called_once_with("https://someoneelse.bandcamp.com/album/x")
 
 
 def test_crawl_label_expands_roster():
