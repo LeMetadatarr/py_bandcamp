@@ -52,7 +52,7 @@ def test_injected_session_captures_search_calls():
 
     assert fake.get.call_count == 1
     args, kwargs = fake.get.call_args
-    assert args[0] == "http://bandcamp.com/search"
+    assert args[0] == "https://bandcamp.com/search"
     assert kwargs["params"]["q"] == "anything"
 
 

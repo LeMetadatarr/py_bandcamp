@@ -449,7 +449,7 @@ class BandCamp:
         params = {"page": _page, "q": name}
         if item_type:
             params["item_type"] = item_type
-        response = _http(_session).get('http://bandcamp.com/search', params=params)
+        response = _http(_session).get('https://bandcamp.com/search', params=params)
 
         page_results = []
         for data in cls.parse_search_page(response.content, albums, tracks, artists, labels):
@@ -483,7 +483,10 @@ class BandCamp:
         soup = BeautifulSoup(content, 'html.parser')
         out = []
         for item in soup.find_all("li", class_="searchresult"):
-            item_type_text = item.find('div', class_='itemtype').text.strip().lower()
+            type_tag = item.find('div', class_='itemtype')
+            if type_tag is None:
+                continue
+            item_type_text = type_tag.text.strip().lower()
             if item_type_text == "album" and albums:
                 data = cls._parse_album(item)
             elif item_type_text == "track" and tracks:
