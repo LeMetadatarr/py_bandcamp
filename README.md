@@ -6,7 +6,7 @@ artist metadata, stream URLs, lyrics, recommendations, and search results.
 It returns [`mediavocab`](https://github.com/TigreGotico/mediavocab) `Release`
 and `Entity` objects for typed, structured metadata.
 
-`mediavocab>=1.0.0` is a hard runtime dependency. Every search and
+`mediavocab>=2.0.0a2` is a hard runtime dependency. Every search and
 recommendation helper returns validated `Release` or `Entity` models. There is
 no dict fallback.
 
