@@ -33,12 +33,12 @@ When only one result type is requested, `search()` sends Bandcamp's
 ### Bot challenge caveat
 
 Bandcamp's `/search` endpoint is fronted by a Fastly JS challenge. With
-plain `requests` the HTML response is likely a challenge page, not results.
-Install `[stealth]` and set `PYBANDCAMP_TRANSPORT=curl_cffi` to bypass it.
+plain `requests` the answer is a challenge page, and the search raises
+`BandcampBlocked`. Install `[stealth]` and set `PYBANDCAMP_TRANSPORT=curl_cffi` to bypass it.
 See [transport.md](transport.md).
 
-Tag browse (`search_tag`) and direct page fetches (`album_to_release`, etc.)
-are **not** affected by the search challenge.
+Tag search (`search_tag`, `browse_tag`) uses the same endpoint and is affected too.
+Direct page fetches (`album_to_release`, etc.) are not.
 
 ---
 

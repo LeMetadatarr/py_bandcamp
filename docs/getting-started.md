@@ -57,7 +57,7 @@ url = BandCamp.get_stream_url(
 
 `BandCamp.get_stream_url`: `py_bandcamp/__init__.py:696`
 
-## Browse by tag (no curl_cffi needed)
+## Browse by tag
 
 ```python
 from py_bandcamp import BandCamp
@@ -66,8 +66,8 @@ for release in BandCamp.search_tag("doom-metal", albums=True, tracks=False, max_
     print(release.work.title, release.uri)
 ```
 
-Tag browse hits the same album and track pages as a direct URL fetch, so it is
-not affected by the search-page bot challenge.
+Tag browse queries the search endpoint, so it needs the `curl_cffi` transport
+where Bandcamp serves the bot challenge.
 
 ---
 [Home](index.md) · [Model reference →](models.md)

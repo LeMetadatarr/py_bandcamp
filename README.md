@@ -161,9 +161,9 @@ a raw model object.
 ## Search caveat: Fastly JS challenge
 
 Bandcamp's `/search` endpoint sits behind a Fastly bot challenge that rejects
-vanilla `requests` TLS fingerprints. Static HTML parsing, such as tag browse
-and album or track page fetches, is unaffected. For live keyword search,
-install the `[stealth]` extra and set `PYBANDCAMP_TRANSPORT=curl_cffi` (see
+vanilla `requests` TLS fingerprints. A blocked search raises `BandcampBlocked`.
+Keyword search and tag search both use that endpoint. Album and track page
+fetches are unaffected. For live search, install the `[stealth]` extra and set `PYBANDCAMP_TRANSPORT=curl_cffi` (see
 [docs/transport.md](docs/transport.md)). Playwright is not required.
 
 ## mediavocab integration
@@ -216,7 +216,7 @@ installed, it falls back silently to plain `requests`.
 | [`examples/04_get_streams.py`](examples/04_get_streams.py) | Batch stream URL extraction |
 | [`examples/05_lyrics.py`](examples/05_lyrics.py) | Fetch and print track lyrics |
 | [`examples/06_recommendations.py`](examples/06_recommendations.py) | "If you like…" albums + related artists |
-| [`examples/07_search_static.py`](examples/07_search_static.py) | Tag browse (works without curl_cffi) |
+| [`examples/07_search_static.py`](examples/07_search_static.py) | Tag list and tag search (tag search needs curl_cffi where Bandcamp serves the challenge) |
 | [`examples/08_to_mediavocab.py`](examples/08_to_mediavocab.py) | Full Release/Entity field walk-through |
 | [`examples/09_custom_session.py`](examples/09_custom_session.py) | Inject session, optional curl_cffi |
 | [`examples/10_label_catalog.py`](examples/10_label_catalog.py) | Label-level browsing |
